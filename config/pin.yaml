@@ -1,0 +1,31 @@
+# Stable AllCall manifest — edit only when bumping references, assets, or pipeline revisions.
+references:
+  fasta_url: https://hgdownload.soe.ucsc.edu/goldenPath/mm39/bigZips/mm39.fa.gz
+  fasta_gz: ref/mm39/mm39.fa.gz
+  fasta: ref/mm39/mm39.fa
+  fasta_md5: 41ace1b7157b98b393746aef5d1287a8
+  gtf_url: https://hgdownload.soe.ucsc.edu/goldenPath/mm39/bigZips/genes/mm39.ncbiRefSeq.gtf.gz
+  gtf_gz: ref/mm39/mm39.ncbiRefSeq.gtf.gz
+  gtf: ref/mm39/mm39.ncbiRefSeq.gtf
+  gtf_md5: 25e15ef5bdd7afc6d3447a757e5fa487
+virus:
+  bundled_url: https://data.broadinstitute.org/Trinity/CTAT_RESOURCE_LIB/VIRUS_INSERTION_FINDING_LIB_SUPPLEMENT/virus_db.fasta
+  bundled_fasta: ref/virus/ctat_virus_db.fasta
+  local_dir: ref/virus/local
+  merged_fasta: ref/virus/viral.fasta
+  dedup_report: ref/virus/dedup.tsv
+kraken2_db: ref/kraken2/mm39
+pipelines:
+  viralintegration:
+    name: nf-core/viralintegration
+    revision: 0.1.1
+  sarek:
+    name: nf-core/sarek
+    revision: 3.10.0
+  viralmetagenome:
+    name: nf-core/viralmetagenome
+    revision: 1.2.0
+nextflow:
+  version: "25.10.7"
+  bin: opt/nextflow
+  home: opt/nxf-home

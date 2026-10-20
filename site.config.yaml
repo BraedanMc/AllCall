@@ -1,0 +1,20 @@
+scratch_root: /scratch.global/bmcc
+work_dirs:
+  viralintegration: nfVI
+  sarek_sv: nfSarekSV
+  sarek_snp: nfSarekSNP
+  viralmetagenome: nfVirMeta
+samplesheet: samplesheets/cohort.csv
+results_dir: results
+pipelines:
+  viralintegration:
+    enabled: true
+  sarek:
+    enabled: true
+    tools_sv: manta
+    tools_snp: haplotypecaller
+  viralmetagenome:
+    enabled: true
+container_profile: apptainer
+sex_xy_min_ratio: 0.1
+nextflow_configs: []
