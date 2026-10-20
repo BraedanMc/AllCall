@@ -1,0 +1,16 @@
+---
+description: Archive each agreed plan under docs/plans with the date in the filename
+alwaysApply: true
+---
+
+# Plan archive
+
+When a plan is agreed, or when an agreed plan is revised, save a copy in `docs/plans/`.
+
+- Filename: `YYYY-MM-DD-short-slug.md`, using the date the copy is written.
+- Body: the plan as agreed, plus one line under the title noting that it is an archived snapshot and the date.
+- Leave Cursor plan frontmatter (todos, `isProject`) out of the archive copy.
+- A revision on a later day gets a new dated file. Do not overwrite an older snapshot.
+- Do this for every plan in this project, not only the WGS workflow.
+
+Example: `docs/plans/2026-10-20-wgs-pipeline-workflow.md`
