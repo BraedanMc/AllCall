@@ -4,8 +4,6 @@ set -euo pipefail
 
 ALLCALL_BIN="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 export ALLCALL_BIN
-# shellcheck source=pipelines.env
-source "${ALLCALL_BIN}/pipelines.env"
 
 die() {
   echo "$*" >&2
@@ -21,11 +19,26 @@ load_config() {
   [[ -f "$CONFIG" ]] || die "config not found: $CONFIG"
   PROJECT_ROOT="$(cd "$(dirname "$CONFIG")" && pwd)"
   export CONFIG PROJECT_ROOT
+  PIN="${ALLCALL_PIN:-${PROJECT_ROOT}/config/pin.yaml}"
+  [[ -f "$PIN" ]] || die "pin manifest not found: ${PIN} (set ALLCALL_PIN to override)"
+  export PIN
   need_cmd yq
+  CONFIG_MERGED="$(mktemp)"
+  export CONFIG_MERGED
+  # pin.yaml first; site config overrides on key overlap (keep keys disjoint).
+  yq -s '.[0] * .[1]' "$PIN" "$CONFIG" >"$CONFIG_MERGED"
 }
 
 cfg() {
-  yq -r "$1" "$CONFIG"
+  yq -r "$1" "$CONFIG_MERGED"
+}
+
+pipeline_name() {
+  cfg ".pipelines.${1}.name"
+}
+
+pipeline_revision() {
+  cfg ".pipelines.${1}.revision"
 }
 
 abs_path() {
@@ -41,7 +54,7 @@ work_dir() {
   local name="$1"
   local scratch sub
   scratch="$(cfg '.scratch_root')"
-  sub="$(yq -r ".work_dirs.${name}" "$CONFIG")"
+  sub="$(yq -r ".work_dirs.${name}" "$CONFIG_MERGED")"
   [[ -n "$sub" && "$sub" != "null" ]] || die "work_dirs: unknown name: $name"
   if [[ "$scratch" = /* ]]; then
     echo "${scratch}/${sub}"
@@ -194,13 +207,13 @@ nextflow_pull() {
   local nf
   nf="$(abs_path "$(cfg '.nextflow.bin')")"
   if [[ "$(cfg '.pipelines.viralintegration.enabled')" == "true" ]]; then
-    _nf_pull_one "$nf" "$ALLCALL_NF_VIRALINTEGRATION" "$ALLCALL_NF_VIRALINTEGRATION_REV"
+    _nf_pull_one "$nf" "$(pipeline_name viralintegration)" "$(pipeline_revision viralintegration)"
   fi
   if [[ "$(cfg '.pipelines.sarek.enabled')" == "true" ]]; then
-    _nf_pull_one "$nf" "$ALLCALL_NF_SAREK" "$ALLCALL_NF_SAREK_REV"
+    _nf_pull_one "$nf" "$(pipeline_name sarek)" "$(pipeline_revision sarek)"
   fi
   if [[ "$(cfg '.pipelines.viralmetagenome.enabled')" == "true" ]]; then
-    _nf_pull_one "$nf" "$ALLCALL_NF_VIRALMETAGENOME" "$ALLCALL_NF_VIRALMETAGENOME_REV"
+    _nf_pull_one "$nf" "$(pipeline_name viralmetagenome)" "$(pipeline_revision viralmetagenome)"
   fi
 }
 
@@ -213,13 +226,13 @@ nextflow_check() {
   [[ -x "$bin" ]] || die "nextflow: missing executable at ${bin}"
   nf_version_ok || die "nextflow: binary at ${bin} does not report version ${ver}"
   if [[ "$(cfg '.pipelines.viralintegration.enabled')" == "true" ]]; then
-    _nf_check_one "$home" "$ALLCALL_NF_VIRALINTEGRATION" "$ALLCALL_NF_VIRALINTEGRATION_REV"
+    _nf_check_one "$home" "$(pipeline_name viralintegration)" "$(pipeline_revision viralintegration)"
   fi
   if [[ "$(cfg '.pipelines.sarek.enabled')" == "true" ]]; then
-    _nf_check_one "$home" "$ALLCALL_NF_SAREK" "$ALLCALL_NF_SAREK_REV"
+    _nf_check_one "$home" "$(pipeline_name sarek)" "$(pipeline_revision sarek)"
   fi
   if [[ "$(cfg '.pipelines.viralmetagenome.enabled')" == "true" ]]; then
-    _nf_check_one "$home" "$ALLCALL_NF_VIRALMETAGENOME" "$ALLCALL_NF_VIRALMETAGENOME_REV"
+    _nf_check_one "$home" "$(pipeline_name viralmetagenome)" "$(pipeline_revision viralmetagenome)"
   fi
 }
 

@@ -4,7 +4,7 @@ set -euo pipefail
 source "$(cd "$(dirname "$0")" && pwd)/lib.sh"
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-CONFIG="${1:-${ROOT}/example.config.yaml}"
+CONFIG="${1:-${ROOT}/site.config.yaml}"
 CONFIG="$(cd "$(dirname "$CONFIG")" && pwd)/$(basename "$CONFIG")"
 load_config "$CONFIG"
 
