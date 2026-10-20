@@ -4,6 +4,8 @@ set -euo pipefail
 
 ALLCALL_BIN="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 export ALLCALL_BIN
+# shellcheck source=pipelines.env
+source "${ALLCALL_BIN}/pipelines.env"
 
 die() {
   echo "$*" >&2
@@ -174,28 +176,31 @@ nf_revision_present() {
   [[ -d "${home}/assets/${slug}-${rev}" ]]
 }
 
+_nf_pull_one() {
+  local nf="$1" name="$2" rev="$3"
+  "$nf" pull "$name" -r "$rev" || die "nextflow: pull failed for ${name} revision ${rev}"
+}
+
+_nf_check_one() {
+  local home="$1" name="$2" rev="$3"
+  nf_revision_present "$home" "$name" "$rev" ||
+    die "nextflow: pipeline ${name} revision ${rev} not found under ${home}"
+}
+
 nextflow_pull() {
   require_java
   nextflow_install
   nextflow_env
-  local nf bin home
+  local nf
   nf="$(abs_path "$(cfg '.nextflow.bin')")"
-  home="$NXF_HOME"
-  local name rev
   if [[ "$(cfg '.pipelines.viralintegration.enabled')" == "true" ]]; then
-    name="$(cfg '.pipelines.viralintegration.name')"
-    rev="$(cfg '.pipelines.viralintegration.revision')"
-    "$nf" pull "$name" -r "$rev" || die "nextflow: pull failed for ${name} revision ${rev}"
+    _nf_pull_one "$nf" "$ALLCALL_NF_VIRALINTEGRATION" "$ALLCALL_NF_VIRALINTEGRATION_REV"
   fi
   if [[ "$(cfg '.pipelines.sarek.enabled')" == "true" ]]; then
-    name="$(cfg '.pipelines.sarek.name')"
-    rev="$(cfg '.pipelines.sarek.revision')"
-    "$nf" pull "$name" -r "$rev" || die "nextflow: pull failed for ${name} revision ${rev}"
+    _nf_pull_one "$nf" "$ALLCALL_NF_SAREK" "$ALLCALL_NF_SAREK_REV"
   fi
   if [[ "$(cfg '.pipelines.viralmetagenome.enabled')" == "true" ]]; then
-    name="$(cfg '.pipelines.viralmetagenome.name')"
-    rev="$(cfg '.pipelines.viralmetagenome.revision')"
-    "$nf" pull "$name" -r "$rev" || die "nextflow: pull failed for ${name} revision ${rev}"
+    _nf_pull_one "$nf" "$ALLCALL_NF_VIRALMETAGENOME" "$ALLCALL_NF_VIRALMETAGENOME_REV"
   fi
 }
 
@@ -207,21 +212,14 @@ nextflow_check() {
   home="$(abs_path "$(cfg '.nextflow.home')")"
   [[ -x "$bin" ]] || die "nextflow: missing executable at ${bin}"
   nf_version_ok || die "nextflow: binary at ${bin} does not report version ${ver}"
-  local name rev
   if [[ "$(cfg '.pipelines.viralintegration.enabled')" == "true" ]]; then
-    name="$(cfg '.pipelines.viralintegration.name')"
-    rev="$(cfg '.pipelines.viralintegration.revision')"
-    nf_revision_present "$home" "$name" "$rev" || die "nextflow: pipeline ${name} revision ${rev} not found under ${home}"
+    _nf_check_one "$home" "$ALLCALL_NF_VIRALINTEGRATION" "$ALLCALL_NF_VIRALINTEGRATION_REV"
   fi
   if [[ "$(cfg '.pipelines.sarek.enabled')" == "true" ]]; then
-    name="$(cfg '.pipelines.sarek.name')"
-    rev="$(cfg '.pipelines.sarek.revision')"
-    nf_revision_present "$home" "$name" "$rev" || die "nextflow: pipeline ${name} revision ${rev} not found under ${home}"
+    _nf_check_one "$home" "$ALLCALL_NF_SAREK" "$ALLCALL_NF_SAREK_REV"
   fi
   if [[ "$(cfg '.pipelines.viralmetagenome.enabled')" == "true" ]]; then
-    name="$(cfg '.pipelines.viralmetagenome.name')"
-    rev="$(cfg '.pipelines.viralmetagenome.revision')"
-    nf_revision_present "$home" "$name" "$rev" || die "nextflow: pipeline ${name} revision ${rev} not found under ${home}"
+    _nf_check_one "$home" "$ALLCALL_NF_VIRALMETAGENOME" "$ALLCALL_NF_VIRALMETAGENOME_REV"
   fi
 }
 

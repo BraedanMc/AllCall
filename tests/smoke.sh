@@ -54,18 +54,12 @@ virus:
 kraken2_db: ${tmp}/ref/kraken2/mm39
 pipelines:
   viralintegration:
-    name: nf-core/viralintegration
-    revision: "0.1.1"
     enabled: true
   sarek:
-    name: nf-core/sarek
-    revision: "3.10.0"
     enabled: true
     tools_sv: manta
     tools_snp: haplotypecaller
   viralmetagenome:
-    name: nf-core/viralmetagenome
-    revision: "1.2.0"
     enabled: true
 nextflow:
   version: "25.10.7"

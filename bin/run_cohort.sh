@@ -141,24 +141,24 @@ cmds=() cmd_names=()
 if [[ "$(cfg '.pipelines.viralintegration.enabled')" == "true" ]]; then
   p="${run_root}/params/viralintegration.config"
   write_params viralintegration "$p"
-  cmds+=("$(nf_cmd "$(cfg '.pipelines.viralintegration.name')" "$(cfg '.pipelines.viralintegration.revision')" "$(work_dir viralintegration)" "$p")")
+  cmds+=("$(nf_cmd "$ALLCALL_NF_VIRALINTEGRATION" "$ALLCALL_NF_VIRALINTEGRATION_REV" "$(work_dir viralintegration)" "$p")")
   cmd_names+=(viralintegration)
 fi
 if [[ "$(cfg '.pipelines.sarek.enabled')" == "true" ]]; then
   p="${run_root}/params/sarek_sv.config"
   write_params sarek_sv "$p"
-  cmds+=("$(nf_cmd "$(cfg '.pipelines.sarek.name')" "$(cfg '.pipelines.sarek.revision')" "$(work_dir sarek_sv)" "$p")")
+  cmds+=("$(nf_cmd "$ALLCALL_NF_SAREK" "$ALLCALL_NF_SAREK_REV" "$(work_dir sarek_sv)" "$p")")
   cmd_names+=(sarek_sv)
 fi
 if [[ "$(cfg '.pipelines.viralmetagenome.enabled')" == "true" ]]; then
   p="${run_root}/params/viralmetagenome.config"
   write_params viralmetagenome "$p"
-  cmds+=("$(nf_cmd "$(cfg '.pipelines.viralmetagenome.name')" "$(cfg '.pipelines.viralmetagenome.revision')" "$(work_dir viralmetagenome)" "$p")")
+  cmds+=("$(nf_cmd "$ALLCALL_NF_VIRALMETAGENOME" "$ALLCALL_NF_VIRALMETAGENOME_REV" "$(work_dir viralmetagenome)" "$p")")
   cmd_names+=(viralmetagenome)
 fi
 p="${run_root}/params/sarek_snp.config"
 write_params sarek_snp "$p"
-snp_cmd="$(nf_cmd "$(cfg '.pipelines.sarek.name')" "$(cfg '.pipelines.sarek.revision')" "$(work_dir sarek_snp)" "$p")"
+snp_cmd="$(nf_cmd "$ALLCALL_NF_SAREK" "$ALLCALL_NF_SAREK_REV" "$(work_dir sarek_snp)" "$p")"
 
 for c in "${cmds[@]}"; do echo "$c"; done
 echo "$snp_cmd"

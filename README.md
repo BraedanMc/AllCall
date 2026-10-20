@@ -13,7 +13,7 @@ Workflow design: [`docs/plans/2026-10-20-wgs-pipeline-workflow.md`](docs/plans/2
 
 ## Configure
 
-1. Copy and edit [`example.config.yaml`](example.config.yaml) (`scratch_root`, `samplesheet`, `container_profile`).
+1. Copy and edit [`example.config.yaml`](example.config.yaml) (`scratch_root`, `samplesheet`, `container_profile`). nf-core pipeline names and `-r` revisions are pinned in [`bin/pipelines.env`](bin/pipelines.env), not in the YAML.
 2. Cohort sheet: `sample`, `fastq_1`, `fastq_2` (optional `lane`). See [`samplesheets/cohort.csv.example`](samplesheets/cohort.csv.example).
 3. Create `ref/virus/local/` and add optional extra viral `.fa` / `.fasta` files before setup.
 
