@@ -29,3 +29,11 @@ nextflow:
   version: "25.10.7"
   bin: opt/nextflow
   home: opt/nxf-home
+# Host tools installed by setup into tool_prefix. Not loaded from modules.
+tool_micromamba: "2.9.0-0"
+tool_bash: "5.2"
+tool_openjdk: "17.0.18"
+tool_yq: "3.4.3"
+tool_samtools: "1.24"
+tool_kraken2: "2.17.2"
+tool_prefix: opt/tools

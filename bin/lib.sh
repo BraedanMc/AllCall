@@ -3,7 +3,12 @@
 set -euo pipefail
 
 ALLCALL_BIN="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-export ALLCALL_BIN
+ALLCALL_ROOT="$(cd "${ALLCALL_BIN}/.." && pwd)"
+export ALLCALL_BIN ALLCALL_ROOT
+if [[ -f "${ALLCALL_ROOT}/opt/env.sh" ]]; then
+  # shellcheck disable=SC1091
+  source "${ALLCALL_ROOT}/opt/env.sh"
+fi
 
 die() {
   echo "$*" >&2
@@ -143,6 +148,142 @@ references_check() {
     "$(cfg '.references.gtf_gz')" \
     "$(cfg '.references.gtf')" \
     "$(cfg '.references.gtf_md5')" 0
+}
+
+pin_field() {
+  local key="$1" file="$2" val
+  val="$(awk -F': ' -v k="$key" '$1 == k { print $2; exit }' "$file")"
+  val="${val%\"}"
+  val="${val#\"}"
+  [[ -n "$val" && "$val" != "null" ]] || die "pin missing ${key} in ${file}"
+  printf '%s' "$val"
+}
+
+conda_platform() {
+  case "$(uname -s)-$(uname -m)" in
+    Darwin-arm64) echo osx-arm64 ;;
+    Darwin-x86_64) echo osx-64 ;;
+    Linux-x86_64) echo linux-64 ;;
+    Linux-aarch64|Linux-arm64) echo linux-aarch64 ;;
+    *) die "tools: unsupported platform $(uname -s) $(uname -m)" ;;
+  esac
+}
+
+tools_pin_file() {
+  echo "${ALLCALL_ROOT}/config/pin.yaml"
+}
+
+tools_spec_stamp() {
+  local pin="$1"
+  printf 'micromamba=%s\nbash=%s\nopenjdk=%s\nyq=%s\nsamtools=%s\nkraken2=%s\n' \
+    "$(pin_field tool_micromamba "$pin")" \
+    "$(pin_field tool_bash "$pin")" \
+    "$(pin_field tool_openjdk "$pin")" \
+    "$(pin_field tool_yq "$pin")" \
+    "$(pin_field tool_samtools "$pin")" \
+    "$(pin_field tool_kraken2 "$pin")"
+}
+
+java_home_for() {
+  local prefix="$1"
+  if [[ -x "${prefix}/lib/jvm/bin/java" ]]; then
+    echo "${prefix}/lib/jvm"
+  elif [[ -x "${prefix}/bin/java" ]]; then
+    echo "${prefix}"
+  else
+    return 1
+  fi
+}
+
+write_tools_env() {
+  local prefix="$1" env_file="${ALLCALL_ROOT}/opt/env.sh" java_home
+  java_home="$(java_home_for "$prefix")" || die "tools: java not found under ${prefix}"
+  mkdir -p "${ALLCALL_ROOT}/opt"
+  cat >"$env_file" <<EOF
+export JAVA_HOME="${java_home}"
+export PATH="${java_home}/bin:${prefix}/bin:\${PATH}"
+EOF
+  # shellcheck disable=SC1090
+  source "$env_file"
+}
+
+tools_ready() {
+  local prefix="$1" stamp="$2" pin="$3"
+  java_home_for "$prefix" >/dev/null || return 1
+  [[ -x "${prefix}/bin/yq" && -x "${prefix}/bin/samtools" && -x "${prefix}/bin/kraken2-build" ]] || return 1
+  [[ -f "$stamp" ]] || return 1
+  [[ "$(cat "$stamp")" == "$(tools_spec_stamp "$pin")" ]]
+}
+
+install_host_tools() {
+  local pin prefix stamp spec mm_ver plat mm_dir mm_bin archive
+  pin="$(tools_pin_file)"
+  [[ -f "$pin" ]] || die "tools: pin manifest not found: ${pin}"
+  prefix="${ALLCALL_ROOT}/$(pin_field tool_prefix "$pin")"
+  stamp="${prefix}/.allcall-stamp"
+  if tools_ready "$prefix" "$stamp" "$pin"; then
+    write_tools_env "$prefix"
+    echo "tools: already installed"
+    return 0
+  fi
+  mm_ver="$(pin_field tool_micromamba "$pin")"
+  plat="$(conda_platform)"
+  mm_dir="${ALLCALL_ROOT}/opt/micromamba"
+  mm_bin="${mm_dir}/bin/micromamba"
+  if [[ ! -x "$mm_bin" ]]; then
+    archive="${mm_dir}/micromamba.tar.bz2"
+    mkdir -p "$mm_dir"
+    curl -fsSL --max-time 180 -o "${archive}.partial" \
+      "https://github.com/mamba-org/micromamba-releases/releases/download/${mm_ver}/micromamba-${plat}.tar.bz2" || {
+      rm -f "${archive}.partial"
+      die "tools: failed to download micromamba ${mm_ver}"
+    }
+    mv "${archive}.partial" "$archive"
+    tar -xjf "$archive" -C "$mm_dir"
+    rm -f "$archive"
+  fi
+  [[ -x "$mm_bin" ]] || die "tools: micromamba binary missing after extract"
+  export MAMBA_ROOT_PREFIX="${ALLCALL_ROOT}/opt/mamba-root"
+  mkdir -p "$MAMBA_ROOT_PREFIX"
+  spec=(
+    "bash=$(pin_field tool_bash "$pin")"
+    "openjdk=$(pin_field tool_openjdk "$pin")"
+    "yq=$(pin_field tool_yq "$pin")"
+    "samtools=$(pin_field tool_samtools "$pin")"
+    "kraken2=$(pin_field tool_kraken2 "$pin")"
+  )
+  if [[ -x "${prefix}/bin/java" ]]; then
+    "$mm_bin" install -y -p "$prefix" -c conda-forge -c bioconda "${spec[@]}" \
+      || die "tools: install failed"
+  else
+    "$mm_bin" create -y -p "$prefix" -c conda-forge -c bioconda "${spec[@]}" \
+      || die "tools: create failed"
+  fi
+  tools_spec_stamp "$pin" >"$stamp"
+  write_tools_env "$prefix"
+  echo "tools: installed into ${prefix}"
+}
+
+tools_check() {
+  local pin prefix stamp
+  pin="$(tools_pin_file)"
+  prefix="${ALLCALL_ROOT}/$(pin_field tool_prefix "$pin")"
+  stamp="${prefix}/.allcall-stamp"
+  [[ -f "${ALLCALL_ROOT}/opt/env.sh" ]] || die "tools: opt/env.sh missing; run ./bin/setup.sh --tools-only"
+  tools_ready "$prefix" "$stamp" "$pin" || die "tools: prefix does not match pin; run ./bin/setup.sh --tools-only"
+  # shellcheck disable=SC1091
+  source "${ALLCALL_ROOT}/opt/env.sh"
+  local maj yq_ver
+  bash --version | grep -q "version $(pin_field tool_bash "$pin")" \
+    || die "tools: bash version mismatch"
+  maj="$(java_major || true)"
+  [[ "$maj" == "17" ]] || die "tools: java is not 17 (got '${maj}')"
+  yq_ver="$(yq --version 2>&1)"
+  [[ "$yq_ver" == *"$(pin_field tool_yq "$pin")"* ]] || die "tools: yq version mismatch: ${yq_ver}"
+  samtools --version | grep -q "$(pin_field tool_samtools "$pin")" \
+    || die "tools: samtools version mismatch"
+  kraken2-build --version >/dev/null 2>&1 || kraken2 --version >/dev/null 2>&1 \
+    || die "tools: kraken2-build is not runnable"
 }
 
 java_major() {

@@ -6,10 +6,19 @@ Workflow design: [`docs/plans/2026-10-20-wgs-pipeline-workflow.md`](docs/plans/2
 
 ## Requirements
 
-- `bash`, `curl`, `yq` (YAML queries), `python3` (virus FASTA merge only)
-- Java 17+ (for Nextflow; not installed here)
-- Docker or Apptainer/Singularity (`container_profile` in site config)
-- `samtools` and `kraken2-build` on `PATH` for CDS filtering, sex checks, and Kraken2 DB build
+`./bin/setup.sh` installs Bash 5, Java 17, `yq`, `samtools`, and `kraken2-build` into `opt/` from the versions in [`config/pin.yaml`](config/pin.yaml). Later scripts use `opt/env.sh` and do not need those tools from a module or the system `PATH`. Bash 5 is included because the scripts use it, and macOS still ships Bash 3.
+
+Still required on the machine:
+
+- `bash` (any version) and `curl`, so setup can start and download the rest
+- `python3`, for the virus FASTA merge only
+- Docker or Apptainer/Singularity (`container_profile` in site config). Setup checks for one of these and does not install it.
+
+Install or refresh only the host tools:
+
+```bash
+./bin/setup.sh --tools-only
+```
 
 ## Configure (two files)
 

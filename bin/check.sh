@@ -8,6 +8,7 @@ CONFIG="${1:-${ROOT}/site.config.yaml}"
 CONFIG="$(cd "$(dirname "$CONFIG")" && pwd)/$(basename "$CONFIG")"
 load_config "$CONFIG"
 
+tools_check
 references_check
 "${ALLCALL_BIN}/merge_virus_fasta.sh" --check-only "$CONFIG"
 nextflow_check

@@ -2,6 +2,17 @@
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
+if [[ -f "${ROOT}/opt/env.sh" ]]; then
+  # shellcheck disable=SC1091
+  source "${ROOT}/opt/env.sh"
+fi
+
+for key in tool_micromamba tool_bash tool_openjdk tool_yq tool_samtools tool_kraken2 tool_prefix; do
+  grep -q "^${key}:" config/pin.yaml || {
+    echo "smoke: pin missing ${key}" >&2
+    exit 1
+  }
+done
 
 if command -v shellcheck >/dev/null; then
   shellcheck bin/*.sh
