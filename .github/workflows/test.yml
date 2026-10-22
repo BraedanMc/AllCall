@@ -13,5 +13,10 @@ jobs:
         run: |
           sudo apt-get update -qq
           sudo apt-get install -y -qq shellcheck yq python3
-      - run: chmod +x bin/*.sh tests/smoke.sh
-      - run: ./tests/smoke.sh
+      - run: chmod +x bin/*.sh tests/*.sh
+      - run: |
+          ./tests/smoke.sh
+          ./tests/test_config_merge.sh
+          ./tests/test_write_sheets_validation.sh
+          ./tests/test_virus_merge.sh
+          ./tests/test_references_check.sh
