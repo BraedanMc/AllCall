@@ -5,10 +5,12 @@ source "$(cd "$(dirname "$0")" && pwd)/lib.sh"
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 TOOLS_ONLY=0
+SKIP_KRAKEN=0
 CONFIG=""
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --tools-only) TOOLS_ONLY=1; shift ;;
+    --skip-kraken) SKIP_KRAKEN=1; shift ;;
     *) CONFIG="$1"; shift ;;
   esac
 done
@@ -28,5 +30,7 @@ references_download
 require_java
 nextflow_install
 nextflow_pull
-kraken_build
+if [[ "$SKIP_KRAKEN" -eq 0 ]]; then
+  kraken_build
+fi
 echo "setup: ok"
