@@ -1,3 +1,6 @@
+data/*
+!data/README.md
+samplesheets/cohort.csv
 __pycache__/
 .pytest_cache/
 *.egg-info/
