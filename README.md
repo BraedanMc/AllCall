@@ -89,10 +89,19 @@ Status matrix: `results/<run-name>/matrix.tsv`.
 
 ## Local workstation
 
-For a laptop or CI-style dry-run (Docker + local Nextflow executor, no UMN `/scratch.global` paths), use [`config/local.config.yaml`](config/local.config.yaml). It sets `container_profile: docker`, repo-relative `scratch_root: scratch`, and merges [`config/nextflow/local.config`](config/nextflow/local.config) (local executor, modest CPU/memory caps).
+For a laptop (local Nextflow executor, no UMN `/scratch.global` paths), use [`config/local.config.yaml`](config/local.config.yaml).
+
+**Layout.** Nextflow work directories live under `scratch_root` (default `~/Documents/projects/allcall/scratch`; `~` and `$HOME/...` are expanded in [`bin/lib.sh`](bin/lib.sh)). Cohort outputs (`results/<run-name>/`, matrix, sheets) stay in the repository via `results_dir: results`, same as the HPC example. Create the scratch tree before setup/check:
 
 ```bash
-mkdir -p scratch data ref/virus/local
+mkdir -p ~/Documents/projects/allcall/scratch data ref/virus/local
+```
+
+**Containers.** Default `container_profile: apptainer` (Apptainer or Singularity on `PATH`). If neither is installed, `./bin/check.sh` prints a hint to install one or switch to `container_profile: docker`. Pipeline revisions stay pinned in [`config/pin.yaml`](config/pin.yaml).
+
+[`config/nextflow/local.config`](config/nextflow/local.config) sets the local executor, modest CPU/memory caps, and Apptainer-friendly `singularity.runOptions` (`-u --containall --no-home`).
+
+```bash
 cp config/local.config.yaml site.config.yaml   # optional; or pass the path below
 ./bin/setup.sh --tools-only                    # fast path: host tools only
 ./bin/setup.sh config/local.config.yaml        # full setup: refs, Nextflow pulls, Kraken build
@@ -101,6 +110,14 @@ cp config/local.config.yaml site.config.yaml   # optional; or pass the path belo
 ```
 
 Edit [`samplesheets/cohort.local.example`](samplesheets/cohort.local.example) (or copy to `samplesheets/cohort.csv`) so `fastq_*` point at real FASTQs under `data/`. Reference downloads and Kraken2 still need disk and network for a full run; dry-run and config tests do not execute pipelines.
+
+### Security (local runs)
+
+- Run AllCall and Nextflow as your normal user, not root; keep `container_profile` on apptainer/docker profiles that map the invoking UID (`-u` / non-root Docker).
+- Use pinned nf-core revisions from `config/pin.yaml`; rebuild or pull images when you bump pins.
+- Keep `scratch_root` and `results/` outside web-served or world-writable directories.
+- Avoid `--privileged` and unnecessary host bind mounts; prefer contained Apptainer (`--containall --no-home`) unless a pipeline documents extra binds.
+- Treat cohort FASTQs and BAMs as sensitive data; restrict filesystem permissions on scratch and results.
 
 ## Scripts
 

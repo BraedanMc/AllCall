@@ -7,11 +7,11 @@ source "${ROOT}/bin/lib.sh"
 
 load_config "${ROOT}/config/local.config.yaml"
 
-[[ "$(cfg '.container_profile')" == "docker" ]] || {
-  echo "local config: expected container_profile docker" >&2
+[[ "$(cfg '.container_profile')" == "apptainer" ]] || {
+  echo "local config: expected container_profile apptainer" >&2
   exit 1
 }
-[[ "$(cfg '.scratch_root')" == "scratch" ]] || {
+[[ "$(cfg '.scratch_root')" == "~/Documents/projects/allcall/scratch" ]] || {
   echo "local config: unexpected scratch_root" >&2
   exit 1
 }
@@ -34,12 +34,23 @@ for rel in "${overlays[@]}"; do
     echo "local config: overlay should set executor (${rel})" >&2
     exit 1
   }
+  grep -q "singularity" "$(abs_path "$rel")" || {
+    echo "local config: overlay should document singularity/apptainer (${rel})" >&2
+    exit 1
+  }
 done
 
-mkdir -p "${ROOT}/scratch"
+scratch_home="${HOME}/Documents/projects/allcall/scratch"
+mkdir -p "$scratch_home"
 wd="$(work_dir viralintegration)"
-[[ "$wd" == "${ROOT}/scratch/nfVI" ]] || {
+[[ "$wd" == "${scratch_home}/nfVI" ]] || {
   echo "local config: work_dir viralintegration wrong (got ${wd})" >&2
+  exit 1
+}
+
+got="$(expand_user_path '$HOME/Documents/projects/allcall/scratch')"
+[[ "$got" == "${HOME}/Documents/projects/allcall/scratch" ]] || {
+  echo "local config: expand_user_path \$HOME failed (got ${got})" >&2
   exit 1
 }
 
