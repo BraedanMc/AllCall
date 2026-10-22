@@ -13,7 +13,17 @@ references_check
 "${ALLCALL_BIN}/merge_virus_fasta.sh" --check-only "$CONFIG"
 nextflow_check
 # kraken_check is paused. The build remains in setup.sh (kraken_build).
+profile="$(cfg '.container_profile')"
+if [[ "$profile" == "apptainer" ]] &&
+  ! command -v apptainer >/dev/null 2>&1 &&
+  ! command -v singularity >/dev/null 2>&1; then
+  echo "check: apptainer/singularity not on PATH; install one or set container_profile: docker in site config" >&2
+fi
 check_container
+while IFS= read -r c; do
+  [[ -n "$c" && "$c" != "null" ]] || continue
+  [[ -f "$(abs_path "$c")" ]] || die "check: nextflow_configs missing file: $(abs_path "$c")"
+done < <(yq -r '.nextflow_configs[]?' "$CONFIG_MERGED")
 check_scratch
 "${ALLCALL_BIN}/write_sheets.sh" "$CONFIG" "${PROJECT_ROOT}/.allcall_setup_sheets_check" 1
 for name in viralintegration sarek_sv sarek_snp viralmetagenome; do

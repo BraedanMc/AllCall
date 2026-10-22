@@ -22,7 +22,14 @@ need_cmd() {
 load_config() {
   CONFIG="${1:?config path required}"
   [[ -f "$CONFIG" ]] || die "config not found: $CONFIG"
-  PROJECT_ROOT="$(cd "$(dirname "$CONFIG")" && pwd)"
+  local config_dir
+  config_dir="$(cd "$(dirname "$CONFIG")" && pwd)"
+  # Site templates under repo config/ still use repo-root-relative paths.
+  if [[ "$config_dir" == "${ALLCALL_ROOT}/config" ]]; then
+    PROJECT_ROOT="$ALLCALL_ROOT"
+  else
+    PROJECT_ROOT="$config_dir"
+  fi
   export CONFIG PROJECT_ROOT
   PIN="${ALLCALL_PIN:-${PROJECT_ROOT}/config/pin.yaml}"
   [[ -f "$PIN" ]] || die "pin manifest not found: ${PIN} (set ALLCALL_PIN to override)"
@@ -71,8 +78,32 @@ pipeline_revision() {
   cfg ".pipelines.${1}.revision"
 }
 
+expand_user_path() {
+  local p="$1"
+  if [[ "$p" == "$(printf '\176')" ]]; then
+    printf '%s' "$HOME"
+  elif [[ "$p" == "$(printf '\176')/"* ]]; then
+    printf '%s' "${HOME}/${p:2}"
+  elif [[ "$p" == "\$HOME" ]]; then
+    printf '%s' "$HOME"
+  elif [[ "$p" == "\$HOME/"* ]]; then
+    printf '%s' "${HOME}/${p:6}"
+  elif [[ "$p" == "\$HOME"* ]]; then
+    printf '%s' "${HOME}${p:5}"
+  elif [[ "$p" == "\${HOME}" ]]; then
+    printf '%s' "$HOME"
+  elif [[ "$p" == "\${HOME}/"* ]]; then
+    printf '%s' "${HOME}/${p:7}"
+  elif [[ "$p" == "\${HOME}"* ]]; then
+    printf '%s' "${HOME}${p:7}"
+  else
+    printf '%s' "$p"
+  fi
+}
+
 abs_path() {
   local p="$1"
+  p="$(expand_user_path "$p")"
   if [[ "$p" = /* ]]; then
     echo "$p"
   else
@@ -83,7 +114,7 @@ abs_path() {
 work_dir() {
   local name="$1"
   local scratch sub
-  scratch="$(cfg '.scratch_root')"
+  scratch="$(expand_user_path "$(cfg '.scratch_root')")"
   sub="$(yq -r ".work_dirs.${name}" "$CONFIG_MERGED")"
   [[ -n "$sub" && "$sub" != "null" ]] || die "work_dirs: unknown name: $name"
   if [[ "$scratch" = /* ]]; then
@@ -464,7 +495,7 @@ check_container() {
 
 check_scratch() {
   local scratch
-  scratch="$(cfg '.scratch_root')"
+  scratch="$(expand_user_path "$(cfg '.scratch_root')")"
   if [[ "$scratch" != /* ]]; then
     scratch="${PROJECT_ROOT}/${scratch}"
   fi
