@@ -21,6 +21,7 @@ jobs:
           ./tests/smoke.sh
           ./tests/test_config_merge.sh
           ./tests/test_local_config.sh
+          ./tests/test_setup_skip_kraken.sh
           ./tests/test_write_sheets_validation.sh
           ./tests/test_virus_merge.sh
           ./tests/test_references_check.sh

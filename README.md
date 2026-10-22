@@ -105,6 +105,7 @@ mkdir -p ~/Documents/projects/allcall/scratch data ref/virus/local
 cp config/local.config.yaml site.config.yaml   # optional; or pass the path below
 ./bin/setup.sh --tools-only                    # fast path: host tools only
 ./bin/setup.sh config/local.config.yaml        # full setup: refs, Nextflow pulls, Kraken build
+./bin/setup.sh --skip-kraken config/local.config.yaml   # skip Kraken2 DB build (Mac phase 1 / low disk)
 ./bin/check.sh config/local.config.yaml
 ./bin/run_cohort.sh --config config/local.config.yaml --dry-run
 ```
