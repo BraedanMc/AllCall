@@ -12,7 +12,7 @@ tools_check
 references_check
 "${ALLCALL_BIN}/merge_virus_fasta.sh" --check-only "$CONFIG"
 nextflow_check
-kraken_check
+# kraken_check is paused. The build remains in setup.sh (kraken_build).
 check_container
 check_scratch
 "${ALLCALL_BIN}/write_sheets.sh" "$CONFIG" "${PROJECT_ROOT}/.allcall_setup_sheets_check" 1

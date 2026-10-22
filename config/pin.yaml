@@ -9,7 +9,7 @@ references:
   gtf: ref/mm39/mm39.ncbiRefSeq.gtf
   gtf_md5: 25e15ef5bdd7afc6d3447a757e5fa487
 virus:
-  bundled_url: https://data.broadinstitute.org/Trinity/CTAT_RESOURCE_LIB/VIRUS_INSERTION_FINDING_LIB_SUPPLEMENT/virus_db.fasta
+  bundled_url: https://data.broadinstitute.org/Trinity/CTAT_RESOURCE_LIB/VIRUS_INSERTION_FINDING_LIB_SUPPLEMENT/virus_db.nr.fasta
   bundled_fasta: ref/virus/ctat_virus_db.fasta
   local_dir: ref/virus/local
   merged_fasta: ref/virus/viral.fasta
@@ -26,7 +26,7 @@ pipelines:
     name: nf-core/viralmetagenome
     revision: 1.2.0
 nextflow:
-  version: "25.10.7"
+  version: "26.10.3"
   bin: opt/nextflow
   home: opt/nxf-home
 # Host tools installed by setup into tool_prefix. Not loaded from modules.

@@ -19,11 +19,21 @@ done
 CONFIG="$(cd "$(dirname "$CONFIG")" && pwd)/$(basename "$CONFIG")"
 load_config "$CONFIG"
 
-"${ALLCALL_BIN}/check.sh" "$CONFIG"
-
 results="$(abs_path "$(cfg '.results_dir')")"
 run_root="${results}/${RUN_NAME}"
 mkdir -p "${run_root}/sheets" "${run_root}/params"
+progress="${run_root}/progress.tsv"
+[[ -f "$progress" ]] || printf 'timestamp\tstep\tstatus\n' >"$progress"
+progress_event() {
+  printf '%s\t%s\t%s\n' "$(date '+%Y-%m-%dT%H:%M:%S%z')" "$1" "$2" >>"$progress"
+}
+
+progress_event check launched
+if ! "${ALLCALL_BIN}/check.sh" "$CONFIG"; then
+  progress_event check failed
+  exit 2
+fi
+progress_event check completed
 
 mapfile -t sheet_paths < <("${ALLCALL_BIN}/write_sheets.sh" "$CONFIG" "${run_root}/sheets" 1)
 declare -A sheets
@@ -170,6 +180,9 @@ if [[ "$DRY_RUN" == 1 ]]; then
     done
   done
   matrix_write
+  for n in "${cmd_names[@]}"; do
+    progress_event "$n" launched
+  done
   exit 0
 fi
 
@@ -200,10 +213,13 @@ for i in "${!cmds[@]}"; do
   name="${cmd_names[$i]}"
   for s in "${samples[@]}"; do STATUS[${s}|${name}]=running; done
   matrix_write
+  progress_event "$name" launched
   eval "${cmds[$i]}" & pid_name[$!]="$name"
 done
 
 snp_started=0 snp_pid=""
+cds_logged=0
+idle_pass=0
 declare -A snp_ready
 
 mark_done() {
@@ -211,6 +227,11 @@ mark_done() {
   local st=failed; [[ "$rc" == 0 ]] && st=succeeded
   for s in "${samples[@]}"; do STATUS[${s}|${name}]=$st; done
   matrix_write
+  if [[ "$st" == succeeded ]]; then
+    progress_event "$name" completed
+  else
+    progress_event "$name" failed
+  fi
   unset "pid_name[$pid]"
 }
 
@@ -226,10 +247,13 @@ while :; do
   for sample in "${samples[@]}"; do
     sv_bam="${out_sv}/preprocessing/markduplicates/${sample}/${sample}.md.cram"
     if [[ -f "$sv_bam" && ! -f "${filt_dir}/${sample}.cds.bam" ]]; then
+      [[ "$cds_logged" == 1 ]] || { progress_event cds_filter launched; cds_logged=1; }
       if samtools view -b -L "$bed_path" "$sv_bam" -o "${filt_dir}/${sample}.cds.bam"; then
         STATUS[${sample}|cds_filter]=succeeded
+        progress_event cds_filter completed
       else
         STATUS[${sample}|cds_filter]=failed
+        progress_event cds_filter failed
       fi
       matrix_write
     fi
@@ -251,6 +275,7 @@ while :; do
     } >"${run_root}/sheets/sarek_snp_samplesheet.csv"
     for s in "${ready[@]}"; do STATUS[${s}|sarek_snp]=running; done
     matrix_write
+    progress_event sarek_snp launched
     eval "$snp_cmd" & snp_pid=$!
     snp_started=1
   fi
@@ -261,10 +286,20 @@ while :; do
     st=failed; [[ "$rc" == 0 ]] && st=succeeded
     for s in "${!snp_ready[@]}"; do STATUS[${s}|sarek_snp]=$st; done
     matrix_write
+    if [[ "$st" == succeeded ]]; then
+      progress_event sarek_snp completed
+    else
+      progress_event sarek_snp failed
+    fi
     snp_pid=""
   fi
 
   [[ ${#pid_name[@]} -eq 0 && "$snp_started" == 1 && -z "$snp_pid" ]] && break
-  [[ ${#pid_name[@]} -eq 0 && "$snp_started" == 0 ]] && sleep 2
+  if [[ ${#pid_name[@]} -eq 0 && "$snp_started" == 0 ]]; then
+    idle_pass=$((idle_pass + 1))
+    [[ "$idle_pass" -ge 2 ]] && break
+  else
+    idle_pass=0
+  fi
   sleep 2
 done
