@@ -1,0 +1,106 @@
+#!/usr/bin/env bash
+# Pin + site YAML merge and path helpers (lib.sh).
+set -euo pipefail
+ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+# shellcheck source=../bin/lib.sh
+source "${ROOT}/bin/lib.sh"
+
+tmp="$(mktemp -d)"
+trap 'rm -rf "$tmp"' EXIT
+
+cat >"${tmp}/pin.yaml" <<'YAML'
+nextflow:
+  version: "26.10.3"
+  bin: opt/nextflow
+  home: opt/nxf-home
+scratch_root: from_pin_should_not_win
+work_dirs:
+  viralintegration: nfVI
+  sarek_sv: nfSarekSV
+  sarek_snp: nfSarekSNP
+  viralmetagenome: nfVirMeta
+YAML
+
+cat >"${tmp}/site.config.yaml" <<YAML
+scratch_root: ${tmp}/scratch_rel
+work_dirs:
+  viralintegration: nfVI
+  sarek_sv: nfSarekSV
+  sarek_snp: nfSarekSNP
+  viralmetagenome: nfVirMeta
+samplesheet: ${tmp}/cohort.csv
+results_dir: ${tmp}/results
+pipelines:
+  viralintegration:
+    enabled: false
+  sarek:
+    enabled: false
+  viralmetagenome:
+    enabled: false
+container_profile: docker
+sex_xy_min_ratio: 0.25
+nextflow_configs: []
+YAML
+
+ALLCALL_PIN="${tmp}/pin.yaml" load_config "${tmp}/site.config.yaml"
+
+[[ "$(cfg '.scratch_root')" == "${tmp}/scratch_rel" ]] || {
+  echo "config merge: site scratch_root should override pin" >&2
+  exit 1
+}
+[[ "$(cfg '.sex_xy_min_ratio')" == "0.25" ]] || {
+  echo "config merge: site sex_xy_min_ratio missing" >&2
+  exit 1
+}
+[[ "$(cfg '.nextflow.version')" == "26.10.3" ]] || {
+  echo "config merge: nextflow.version should come from pin" >&2
+  exit 1
+}
+
+mkdir -p "${tmp}/scratch_rel"
+wd="$(work_dir viralintegration)"
+[[ "$wd" == "${tmp}/scratch_rel/nfVI" ]] || {
+  echo "work_dir: expected ${tmp}/scratch_rel/nfVI got ${wd}" >&2
+  exit 1
+}
+
+cat >"${tmp}/site_abs.yaml" <<YAML
+scratch_root: ${tmp}/scratch_abs
+work_dirs:
+  viralintegration: nfVI
+  sarek_sv: nfSarekSV
+  sarek_snp: nfSarekSNP
+  viralmetagenome: nfVirMeta
+samplesheet: ${tmp}/cohort.csv
+results_dir: ${tmp}/results
+pipelines:
+  viralintegration:
+    enabled: false
+  sarek:
+    enabled: false
+  viralmetagenome:
+    enabled: false
+container_profile: docker
+sex_xy_min_ratio: 0.1
+nextflow_configs: []
+YAML
+mkdir -p "${tmp}/scratch_abs"
+ALLCALL_PIN="${tmp}/pin.yaml" load_config "${tmp}/site_abs.yaml"
+[[ "$(work_dir viralintegration)" == "${tmp}/scratch_abs/nfVI" ]] || {
+  echo "work_dir: absolute scratch_root path wrong" >&2
+  exit 1
+}
+
+rel="nested/rel.out"
+got="$(abs_path "$rel")"
+[[ "$got" == "${PROJECT_ROOT}/nested/rel.out" ]] || {
+  echo "abs_path: relative resolution wrong (got ${got})" >&2
+  exit 1
+}
+
+if ( work_dir unknown_key ) >/dev/null 2>&1; then
+  echo "work_dir: should fail for unknown name" >&2
+  exit 1
+fi
+
+echo "test_config_merge: ok"
