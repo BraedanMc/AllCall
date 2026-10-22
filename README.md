@@ -97,9 +97,9 @@ For a laptop (local Nextflow executor, no UMN `/scratch.global` paths), use [`co
 mkdir -p ~/Documents/projects/allcall/scratch data ref/virus/local
 ```
 
-**Containers.** Default `container_profile: apptainer` (Apptainer or Singularity on `PATH`). If neither is installed, `./bin/check.sh` prints a hint to install one or switch to `container_profile: docker`. Pipeline revisions stay pinned in [`config/pin.yaml`](config/pin.yaml).
+**Containers.** [`config/local.config.yaml`](config/local.config.yaml) defaults to `container_profile: docker` (Docker Desktop on Mac). On Linux HPC, set `container_profile: apptainer` when Apptainer/Singularity is on `PATH`. Pipeline revisions stay pinned in [`config/pin.yaml`](config/pin.yaml).
 
-[`config/nextflow/local.config`](config/nextflow/local.config) sets the local executor, modest CPU/memory caps, and Apptainer-friendly `singularity.runOptions` (`-u --containall --no-home`).
+[`config/nextflow/local.config`](config/nextflow/local.config) sets the local executor, modest CPU/memory caps, and container notes (Apptainer `singularity.runOptions` or Docker via nf-core `-profile docker`).
 
 ```bash
 cp config/local.config.yaml site.config.yaml   # optional; or pass the path below

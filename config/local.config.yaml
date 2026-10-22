@@ -21,8 +21,8 @@ pipelines:
     tools_snp: haplotypecaller
   viralmetagenome:
     enabled: true
-# Prefer apptainer/singularity on Linux; use container_profile: docker if only Docker is installed.
-container_profile: apptainer
+# Mac / Docker Desktop: docker. Linux HPC: container_profile: apptainer
+container_profile: docker
 sex_xy_min_ratio: 0.1
 nextflow_configs:
   - config/nextflow/local.config

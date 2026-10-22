@@ -82,7 +82,7 @@ expand_user_path() {
   local p="$1"
   if [[ "$p" == "~" ]]; then
     printf '%s' "$HOME"
-  elif [[ "$p" == "~/"* ]]; then
+  elif [[ ${p:0:2} == '~/' ]]; then
     printf '%s' "${HOME}/${p:2}"
   elif [[ "$p" == "\$HOME" ]]; then
     printf '%s' "$HOME"

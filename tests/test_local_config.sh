@@ -7,8 +7,8 @@ source "${ROOT}/bin/lib.sh"
 
 load_config "${ROOT}/config/local.config.yaml"
 
-[[ "$(cfg '.container_profile')" == "apptainer" ]] || {
-  echo "local config: expected container_profile apptainer" >&2
+[[ "$(cfg '.container_profile')" == "docker" ]] || {
+  echo "local config: expected container_profile docker" >&2
   exit 1
 }
 [[ "$(cfg '.scratch_root')" == "~/Documents/projects/allcall/scratch" ]] || {
@@ -34,8 +34,8 @@ for rel in "${overlays[@]}"; do
     echo "local config: overlay should set executor (${rel})" >&2
     exit 1
   }
-  grep -q "singularity" "$(abs_path "$rel")" || {
-    echo "local config: overlay should document singularity/apptainer (${rel})" >&2
+  grep -qE 'singularity|docker' "$(abs_path "$rel")" || {
+    echo "local config: overlay should document container options (${rel})" >&2
     exit 1
   }
 done
