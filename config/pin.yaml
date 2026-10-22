@@ -9,7 +9,7 @@ species:
       gtf_url: https://hgdownload.soe.ucsc.edu/goldenPath/hg38/bigZips/genes/hg38.ncbiRefSeq.gtf.gz
       gtf_gz: ref/hg38/hg38.ncbiRefSeq.gtf.gz
       gtf: ref/hg38/hg38.ncbiRefSeq.gtf
-      gtf_md5: 15e6cab3a16e87f2564839f7500700e2
+      gtf_md5: 6a585655a3e67150264b792b758372a2
     kraken2_db: ref/kraken2/hg38
   mouse:
     references:
@@ -46,7 +46,7 @@ nextflow:
 tool_micromamba: "2.9.0-0"
 tool_bash: "5.2"
 tool_openjdk: "17.0.18"
-tool_yq: "3.4.3"
+tool_yq: "4.44.6"
 tool_samtools: "1.24"
 tool_kraken2: "2.17.2"
 tool_prefix: opt/tools
