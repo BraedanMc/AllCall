@@ -1,3 +1,5 @@
+# human (hg38) or mouse (mm39); reference URLs and paths come from config/pin.yaml species.*
+species: human
 scratch_root: /scratch.global/bmcc
 work_dirs:
   viralintegration: nfVI
