@@ -80,9 +80,9 @@ pipeline_revision() {
 
 expand_user_path() {
   local p="$1"
-  if [[ "$p" == "~" ]]; then
+  if [[ "$p" == "$(printf '\176')" ]]; then
     printf '%s' "$HOME"
-  elif [[ ${p:0:2} == '~/' ]]; then
+  elif [[ "$p" == "$(printf '\176')/"* ]]; then
     printf '%s' "${HOME}/${p:2}"
   elif [[ "$p" == "\$HOME" ]]; then
     printf '%s' "$HOME"
