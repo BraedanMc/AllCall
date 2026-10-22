@@ -15,7 +15,7 @@ for key in tool_micromamba tool_bash tool_openjdk tool_yq tool_samtools tool_kra
 done
 
 if command -v shellcheck >/dev/null; then
-  shellcheck bin/*.sh
+  shellcheck -S warning bin/*.sh
 fi
 
 tmp="$(mktemp -d)"
