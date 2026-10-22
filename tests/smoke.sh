@@ -99,5 +99,9 @@ test -f "${tmp}/sheets/viralintegration_samplesheet.csv"
 
 "${ROOT}/bin/cds_bed.sh" "${tmp}/ref/mm39.gtf" "${tmp}/cds.bed" 10
 test -s "${tmp}/cds.bed"
+grep -q $'chr1\t0\t30' "${tmp}/cds.bed" || {
+  echo "smoke: cds.bed expected chr1 0-30 with 10bp flank on CDS 10-20" >&2
+  exit 1
+}
 
 echo "smoke: ok"

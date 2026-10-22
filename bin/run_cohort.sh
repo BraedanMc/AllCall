@@ -220,6 +220,7 @@ done
 snp_started=0 snp_pid=""
 cds_logged=0
 idle_pass=0
+sarek_sv_finished=0
 declare -A snp_ready
 
 mark_done() {
@@ -232,7 +233,20 @@ mark_done() {
   else
     progress_event "$name" failed
   fi
+  [[ "$name" == sarek_sv ]] && sarek_sv_finished=1
   unset "pid_name[$pid]"
+}
+
+cds_filter_settled() {
+  [[ "$sarek_sv_finished" == 1 ]] || return 1
+  local sample sv_bam st
+  for sample in "${samples[@]}"; do
+    sv_bam="${out_sv}/preprocessing/markduplicates/${sample}/${sample}.md.cram"
+    [[ -f "$sv_bam" ]] || continue
+    st="${STATUS[${sample}|cds_filter]:-not_started}"
+    [[ "$st" != not_started ]] || return 1
+  done
+  return 0
 }
 
 while :; do
@@ -265,7 +279,7 @@ while :; do
     [[ -f "${filt_dir}/${sample}.cds.bam" ]] && snp_ready[$sample]=1
   done
 
-  if [[ "$snp_started" == 0 && ${#snp_ready[@]} -gt 0 && "$(cfg '.pipelines.sarek.enabled')" == "true" ]]; then
+  if [[ "$snp_started" == 0 && ${#snp_ready[@]} -gt 0 && "$(cfg '.pipelines.sarek.enabled')" == "true" ]] && cds_filter_settled; then
     mapfile -t ready < <(printf '%s\n' "${!snp_ready[@]}" | sort)
     {
       echo "patient,sex,status,sample,bam"

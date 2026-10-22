@@ -11,7 +11,7 @@ awk -v flank="$FLANK" '
   {
     s = $4 - 1 - flank
     if (s < 0) s = 0
-    e = $4 + flank
+    e = $5 + flank
     print $1, s, e
   }
 ' "$GTF" | sort -k1,1 -k2,2n | awk '
