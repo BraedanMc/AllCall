@@ -4,6 +4,43 @@ Bash-first orchestration for mouse WGS cohorts: a **site** YAML for per-run sett
 
 Workflow design: [`docs/plans/2026-10-20-wgs-pipeline-workflow.md`](docs/plans/2026-10-20-wgs-pipeline-workflow.md).
 
+## Progress
+
+| Step | Status |
+|------|--------|
+| Host tools in `opt/` (Bash 5, Java 17, yq, samtools, kraken2-build) | Done |
+| UCSC mm39 FASTA and RefSeq GTF | Done |
+| Virus FASTA (CTAT nr + local inserts) | Done |
+| Nextflow 26.10.3 and pinned nf-core pulls | Done |
+| Sample-sheet expansion | Done |
+| Kraken2 host database | Paused |
+| Cohort FASTQs and `samplesheets/cohort.csv` | Not started |
+| Site Nextflow configs | Not started |
+| Launch viralintegration, Sarek SV, viralmetagenome | Not started |
+| CDS filter, sex check, Sarek SNP | Not started |
+
+## Workflow
+
+```mermaid
+flowchart TD
+  setup[Setup check]
+  vi[viralintegration]
+  sv[Sarek SV and Manta]
+  vm[viralmetagenome]
+  filt[CDS filter plus 10 bp]
+  sex[Sex from host BAM]
+  snp[Sarek SNP as WES]
+  setup --> vi
+  setup --> sv
+  setup --> vm
+  sv --> filt
+  vi --> sex
+  filt --> snp
+  sex --> snp
+```
+
+Viral integration, Sarek SV, and viralmetagenome start together. Sarek SNP starts after the CDS filter. Sex is filled from the viralintegration alignment when that BAM exists. One failure does not stop the other runs.
+
 ## Requirements
 
 `./bin/setup.sh` installs Bash 5, Java 17, `yq`, `samtools`, and `kraken2-build` into `opt/` from the versions in [`config/pin.yaml`](config/pin.yaml). Later scripts use `opt/env.sh` and do not need those tools from a module or the system `PATH`. Bash 5 is included because the scripts use it, and macOS still ships Bash 3.
