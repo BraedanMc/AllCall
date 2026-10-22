@@ -78,8 +78,32 @@ pipeline_revision() {
   cfg ".pipelines.${1}.revision"
 }
 
+expand_user_path() {
+  local p="$1"
+  if [[ "$p" == "~" ]]; then
+    printf '%s' "$HOME"
+  elif [[ "$p" == "~/"* ]]; then
+    printf '%s' "${HOME}/${p:2}"
+  elif [[ "$p" == "\$HOME" ]]; then
+    printf '%s' "$HOME"
+  elif [[ "$p" == "\$HOME/"* ]]; then
+    printf '%s' "${HOME}/${p:6}"
+  elif [[ "$p" == "\$HOME"* ]]; then
+    printf '%s' "${HOME}${p:5}"
+  elif [[ "$p" == "\${HOME}" ]]; then
+    printf '%s' "$HOME"
+  elif [[ "$p" == "\${HOME}/"* ]]; then
+    printf '%s' "${HOME}/${p:7}"
+  elif [[ "$p" == "\${HOME}"* ]]; then
+    printf '%s' "${HOME}${p:7}"
+  else
+    printf '%s' "$p"
+  fi
+}
+
 abs_path() {
   local p="$1"
+  p="$(expand_user_path "$p")"
   if [[ "$p" = /* ]]; then
     echo "$p"
   else
@@ -90,7 +114,7 @@ abs_path() {
 work_dir() {
   local name="$1"
   local scratch sub
-  scratch="$(cfg '.scratch_root')"
+  scratch="$(expand_user_path "$(cfg '.scratch_root')")"
   sub="$(yq -r ".work_dirs.${name}" "$CONFIG_MERGED")"
   [[ -n "$sub" && "$sub" != "null" ]] || die "work_dirs: unknown name: $name"
   if [[ "$scratch" = /* ]]; then
@@ -471,7 +495,7 @@ check_container() {
 
 check_scratch() {
   local scratch
-  scratch="$(cfg '.scratch_root')"
+  scratch="$(expand_user_path "$(cfg '.scratch_root')")"
   if [[ "$scratch" != /* ]]; then
     scratch="${PROJECT_ROOT}/${scratch}"
   fi
