@@ -15,7 +15,7 @@ Workflow design: [`docs/plans/2026-10-20-wgs-pipeline-workflow.md`](docs/plans/2
 | Sample-sheet expansion | Done |
 | Kraken2 host database | Paused |
 | Cohort FASTQs and `samplesheets/cohort.csv` | Not started |
-| Site Nextflow configs | Not started |
+| Site Nextflow configs | Local overlay in `config/nextflow/` |
 | Launch viralintegration, Sarek SV, viralmetagenome | Not started |
 | CDS filter, sex check, Sarek SNP | Not started |
 
@@ -86,6 +86,21 @@ Dry-run (prints four `nextflow run … -resume` commands and writes `running` in
 ```
 
 Status matrix: `results/<run-name>/matrix.tsv`.
+
+## Local workstation
+
+For a laptop or CI-style dry-run (Docker + local Nextflow executor, no UMN `/scratch.global` paths), use [`config/local.config.yaml`](config/local.config.yaml). It sets `container_profile: docker`, repo-relative `scratch_root: scratch`, and merges [`config/nextflow/local.config`](config/nextflow/local.config) (local executor, modest CPU/memory caps).
+
+```bash
+mkdir -p scratch data ref/virus/local
+cp config/local.config.yaml site.config.yaml   # optional; or pass the path below
+./bin/setup.sh --tools-only                    # fast path: host tools only
+./bin/setup.sh config/local.config.yaml        # full setup: refs, Nextflow pulls, Kraken build
+./bin/check.sh config/local.config.yaml
+./bin/run_cohort.sh --config config/local.config.yaml --dry-run
+```
+
+Edit [`samplesheets/cohort.local.example`](samplesheets/cohort.local.example) (or copy to `samplesheets/cohort.csv`) so `fastq_*` point at real FASTQs under `data/`. Reference downloads and Kraken2 still need disk and network for a full run; dry-run and config tests do not execute pipelines.
 
 ## Scripts
 
