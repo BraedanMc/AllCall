@@ -7,6 +7,15 @@ if [[ -f "${ROOT}/opt/env.sh" ]]; then
   source "${ROOT}/opt/env.sh"
 fi
 
+SMOKE_SPECIES="${SMOKE_SPECIES:-human}"
+case "$SMOKE_SPECIES" in
+  human|mouse) ;;
+  *)
+    echo "smoke: SMOKE_SPECIES must be human or mouse (got '${SMOKE_SPECIES}')" >&2
+    exit 1
+    ;;
+esac
+
 for key in tool_micromamba tool_bash tool_openjdk tool_yq tool_samtools tool_kraken2 tool_prefix; do
   grep -q "^${key}:" config/pin.yaml || {
     echo "smoke: pin missing ${key}" >&2
@@ -23,17 +32,26 @@ trap 'rm -rf "$tmp"' EXIT
 scratch="${tmp}/scratch"
 mkdir -p "$scratch" "${tmp}/ref/virus/local" "${tmp}/data" "${tmp}/config"
 
+ref_tag="hg38"
+fasta_md5="1c9dcaddfa41027f17cd8f7a82c7293b"
+gtf_md5="15e6cab3a16e87f2564839f7500700e2"
+if [[ "$SMOKE_SPECIES" == mouse ]]; then
+  ref_tag="mm39"
+  fasta_md5="41ace1b7157b98b393746aef5d1287a8"
+  gtf_md5="25e15ef5bdd7afc6d3447a757e5fa487"
+fi
+
 # Fixture pin: local paths under tmp (URLs unused in smoke).
 yq "
-  .references.fasta_gz = \"${tmp}/ref/mm39.fa.gz\" |
-  .references.fasta = \"${tmp}/ref/mm39.fa\" |
-  .references.gtf_gz = \"${tmp}/ref/mm39.gtf.gz\" |
-  .references.gtf = \"${tmp}/ref/mm39.gtf\" |
+  .species.${SMOKE_SPECIES}.references.fasta_gz = \"${tmp}/ref/${ref_tag}.fa.gz\" |
+  .species.${SMOKE_SPECIES}.references.fasta = \"${tmp}/ref/${ref_tag}.fa\" |
+  .species.${SMOKE_SPECIES}.references.gtf_gz = \"${tmp}/ref/${ref_tag}.gtf.gz\" |
+  .species.${SMOKE_SPECIES}.references.gtf = \"${tmp}/ref/${ref_tag}.gtf\" |
+  .species.${SMOKE_SPECIES}.kraken2_db = \"${tmp}/ref/kraken2/${ref_tag}\" |
   .virus.bundled_fasta = \"${tmp}/ref/virus/ctat.fasta\" |
   .virus.local_dir = \"${tmp}/ref/virus/local\" |
   .virus.merged_fasta = \"${tmp}/ref/virus/viral.fasta\" |
   .virus.dedup_report = \"${tmp}/ref/virus/dedup.tsv\" |
-  .kraken2_db = \"${tmp}/ref/kraken2/mm39\" |
   .nextflow.bin = \"${tmp}/opt/nextflow\" |
   .nextflow.home = \"${tmp}/opt/nxf-home\"
 " "${ROOT}/config/pin.yaml" >"${tmp}/config/pin.yaml"
@@ -54,6 +72,7 @@ TTTT
 FA
 
 cat >"${tmp}/site.config.yaml" <<YAML
+species: ${SMOKE_SPECIES}
 scratch_root: ${scratch}
 work_dirs:
   viralintegration: nfVI
@@ -77,14 +96,14 @@ nextflow_configs: []
 YAML
 
 cp "${tmp}/bundled.fa" "${tmp}/ref/virus/ctat.fasta"
-echo "gzip test" | gzip -c >"${tmp}/ref/mm39.fa.gz"
-printf 'ACGT\n' >"${tmp}/ref/mm39.fa"
-echo "41ace1b7157b98b393746aef5d1287a8" >"${tmp}/ref/mm39.fa.stamp"
-cat >"${tmp}/ref/mm39.gtf" <<'GTF'
+echo "gzip test" | gzip -c >"${tmp}/ref/${ref_tag}.fa.gz"
+printf 'ACGT\n' >"${tmp}/ref/${ref_tag}.fa"
+echo "$fasta_md5" >"${tmp}/ref/${ref_tag}.fa.stamp"
+cat >"${tmp}/ref/${ref_tag}.gtf" <<'GTF'
 chr1	source	gene	1	100	.	+	.	.
 chr1	source	CDS	10	20	.	+	0	.
 GTF
-echo "25e15ef5bdd7afc6d3447a757e5fa487" >"${tmp}/ref/mm39.gtf.stamp"
+echo "$gtf_md5" >"${tmp}/ref/${ref_tag}.gtf.stamp"
 
 touch "${tmp}/data/S1_R1.fastq.gz" "${tmp}/data/S1_R2.fastq.gz"
 echo "sample,fastq_1,fastq_2" >"${tmp}/cohort.csv"
@@ -97,11 +116,11 @@ grep -q TTTT "${tmp}/ref/virus/viral.fasta"
 ALLCALL_PIN="${tmp}/config/pin.yaml" "${ROOT}/bin/write_sheets.sh" "${tmp}/site.config.yaml" "${tmp}/sheets" 0
 test -f "${tmp}/sheets/viralintegration_samplesheet.csv"
 
-"${ROOT}/bin/cds_bed.sh" "${tmp}/ref/mm39.gtf" "${tmp}/cds.bed" 10
+"${ROOT}/bin/cds_bed.sh" "${tmp}/ref/${ref_tag}.gtf" "${tmp}/cds.bed" 10
 test -s "${tmp}/cds.bed"
 grep -q $'chr1\t0\t30' "${tmp}/cds.bed" || {
   echo "smoke: cds.bed expected chr1 0-30 with 10bp flank on CDS 10-20" >&2
   exit 1
 }
 
-echo "smoke: ok"
+echo "smoke: ok (${SMOKE_SPECIES})"
