@@ -22,7 +22,14 @@ need_cmd() {
 load_config() {
   CONFIG="${1:?config path required}"
   [[ -f "$CONFIG" ]] || die "config not found: $CONFIG"
-  PROJECT_ROOT="$(cd "$(dirname "$CONFIG")" && pwd)"
+  local config_dir
+  config_dir="$(cd "$(dirname "$CONFIG")" && pwd)"
+  # Site templates under repo config/ still use repo-root-relative paths.
+  if [[ "$config_dir" == "${ALLCALL_ROOT}/config" ]]; then
+    PROJECT_ROOT="$ALLCALL_ROOT"
+  else
+    PROJECT_ROOT="$config_dir"
+  fi
   export CONFIG PROJECT_ROOT
   PIN="${ALLCALL_PIN:-${PROJECT_ROOT}/config/pin.yaml}"
   [[ -f "$PIN" ]] || die "pin manifest not found: ${PIN} (set ALLCALL_PIN to override)"
