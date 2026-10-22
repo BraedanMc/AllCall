@@ -89,7 +89,7 @@ Status matrix: `results/<run-name>/matrix.tsv`.
 
 ## Local workstation
 
-For a laptop (local Nextflow executor, no UMN `/scratch.global` paths), use [`config/local.config.yaml`](config/local.config.yaml).
+For a laptop (local Nextflow executor, no UMN `/scratch.global` paths), use [`config/local.config.yaml`](config/local.config.yaml). Step-by-step Mac workflow: [`docs/local-mac-runbook.md`](docs/local-mac-runbook.md).
 
 **Layout.** Nextflow work directories live under `scratch_root` (default `~/Documents/projects/allcall/scratch`; `~` and `$HOME/...` are expanded in [`bin/lib.sh`](bin/lib.sh)). Cohort outputs (`results/<run-name>/`, matrix, sheets) stay in the repository via `results_dir: results`, same as the HPC example. Create the scratch tree before setup/check:
 

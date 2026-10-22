@@ -1,4 +1,5 @@
 # Local workstation site config (no HPC scratch paths).
+species: human
 # Copy: cp config/local.config.yaml site.config.yaml
 # Or pass this path to ./bin/setup.sh, ./bin/check.sh, ./bin/run_cohort.sh --config ...
 # scratch_root: ~ and $HOME/... are expanded by bin/lib.sh (see expand_user_path).
