@@ -302,7 +302,9 @@ require_java() {
 }
 
 nextflow_env() {
-  export NXF_HOME="$(abs_path "$(cfg '.nextflow.home')")"
+  local nxf_home
+  nxf_home="$(abs_path "$(cfg '.nextflow.home')")"
+  export NXF_HOME="$nxf_home"
   export NXF_DISABLE_CHECK_LATEST=true
 }
 

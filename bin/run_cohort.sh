@@ -60,7 +60,7 @@ matrix_write() {
     for s in "${samples[@]}"; do
       echo -ne "${s}\t"
       for a in "${ANALYSES[@]}"; do
-        echo -ne "${STATUS[${s}|${a}]:-not_started}\t"
+        echo -ne "${STATUS["${s}|${a}"]:-not_started}\t"
       done
       echo
     done
@@ -69,7 +69,7 @@ matrix_write() {
 }
 
 for s in "${samples[@]}"; do
-  for a in "${ANALYSES[@]}"; do STATUS[${s}|${a}]=not_started; done
+  for a in "${ANALYSES[@]}"; do STATUS["${s}|${a}"]=not_started; done
 done
 
 bed_path="${run_root}/cds_intervals.bed"
@@ -176,7 +176,7 @@ echo "$snp_cmd"
 if [[ "$DRY_RUN" == 1 ]]; then
   for s in "${samples[@]}"; do
     for n in viralintegration sarek_sv viralmetagenome; do
-      STATUS[${s}|${n}]=running
+      STATUS["${s}|${n}"]=running
     done
   done
   matrix_write
@@ -211,7 +211,7 @@ infer_sex() {
 declare -A pid_name
 for i in "${!cmds[@]}"; do
   name="${cmd_names[$i]}"
-  for s in "${samples[@]}"; do STATUS[${s}|${name}]=running; done
+  for s in "${samples[@]}"; do STATUS["${s}|${name}"]=running; done
   matrix_write
   progress_event "$name" launched
   eval "${cmds[$i]}" & pid_name[$!]="$name"
@@ -220,19 +220,35 @@ done
 snp_started=0 snp_pid=""
 cds_logged=0
 idle_pass=0
+sarek_sv_finished=0
 declare -A snp_ready
 
 mark_done() {
-  local pid="$1" rc="$2" name="${pid_name[$pid]}"
+  local pid="$1"
+  local rc="$2"
+  local name="${pid_name[$pid]}"
   local st=failed; [[ "$rc" == 0 ]] && st=succeeded
-  for s in "${samples[@]}"; do STATUS[${s}|${name}]=$st; done
+  for s in "${samples[@]}"; do STATUS["${s}|${name}"]=$st; done
   matrix_write
   if [[ "$st" == succeeded ]]; then
     progress_event "$name" completed
   else
     progress_event "$name" failed
   fi
+  [[ "$name" == sarek_sv ]] && sarek_sv_finished=1
   unset "pid_name[$pid]"
+}
+
+cds_filter_settled() {
+  [[ "$sarek_sv_finished" == 1 ]] || return 1
+  local sample sv_bam st
+  for sample in "${samples[@]}"; do
+    sv_bam="${out_sv}/preprocessing/markduplicates/${sample}/${sample}.md.cram"
+    [[ -f "$sv_bam" ]] || continue
+    st="${STATUS["${sample}|cds_filter"]:-not_started}"
+    [[ "$st" != not_started ]] || return 1
+  done
+  return 0
 }
 
 while :; do
@@ -249,10 +265,10 @@ while :; do
     if [[ -f "$sv_bam" && ! -f "${filt_dir}/${sample}.cds.bam" ]]; then
       [[ "$cds_logged" == 1 ]] || { progress_event cds_filter launched; cds_logged=1; }
       if samtools view -b -L "$bed_path" "$sv_bam" -o "${filt_dir}/${sample}.cds.bam"; then
-        STATUS[${sample}|cds_filter]=succeeded
+        STATUS["${sample}|cds_filter"]=succeeded
         progress_event cds_filter completed
       else
-        STATUS[${sample}|cds_filter]=failed
+        STATUS["${sample}|cds_filter"]=failed
         progress_event cds_filter failed
       fi
       matrix_write
@@ -265,7 +281,7 @@ while :; do
     [[ -f "${filt_dir}/${sample}.cds.bam" ]] && snp_ready[$sample]=1
   done
 
-  if [[ "$snp_started" == 0 && ${#snp_ready[@]} -gt 0 && "$(cfg '.pipelines.sarek.enabled')" == "true" ]]; then
+  if [[ "$snp_started" == 0 && ${#snp_ready[@]} -gt 0 && "$(cfg '.pipelines.sarek.enabled')" == "true" ]] && cds_filter_settled; then
     mapfile -t ready < <(printf '%s\n' "${!snp_ready[@]}" | sort)
     {
       echo "patient,sex,status,sample,bam"
@@ -273,7 +289,7 @@ while :; do
         echo "${s},${sex_map[$s]:-NA},0,${s},${filt_dir}/${s}.cds.bam"
       done
     } >"${run_root}/sheets/sarek_snp_samplesheet.csv"
-    for s in "${ready[@]}"; do STATUS[${s}|sarek_snp]=running; done
+    for s in "${ready[@]}"; do STATUS["${s}|sarek_snp"]=running; done
     matrix_write
     progress_event sarek_snp launched
     eval "$snp_cmd" & snp_pid=$!
@@ -284,7 +300,7 @@ while :; do
     rc=0
     wait "$snp_pid" || rc=$?
     st=failed; [[ "$rc" == 0 ]] && st=succeeded
-    for s in "${!snp_ready[@]}"; do STATUS[${s}|sarek_snp]=$st; done
+    for s in "${!snp_ready[@]}"; do STATUS["${s}|sarek_snp"]=$st; done
     matrix_write
     if [[ "$st" == succeeded ]]; then
       progress_event sarek_snp completed
