@@ -1,0 +1,23 @@
+# Mac phase 1: viralintegration only (Sarek / viralmetagenome off until disk check passes).
+species: human
+scratch_root: ~/Documents/projects/allcall/scratch
+work_dirs:
+  viralintegration: nfVI
+  sarek_sv: nfSarekSV
+  sarek_snp: nfSarekSNP
+  viralmetagenome: nfVirMeta
+samplesheet: samplesheets/cohort.csv
+results_dir: results
+pipelines:
+  viralintegration:
+    enabled: true
+  sarek:
+    enabled: false
+    tools_sv: manta
+    tools_snp: haplotypecaller
+  viralmetagenome:
+    enabled: false
+container_profile: docker
+sex_xy_min_ratio: 0.1
+nextflow_configs:
+  - config/nextflow/local.config
