@@ -1,20 +1,33 @@
 # Stable AllCall manifest — edit only when bumping references, assets, or pipeline revisions.
-references:
-  fasta_url: https://hgdownload.soe.ucsc.edu/goldenPath/mm39/bigZips/mm39.fa.gz
-  fasta_gz: ref/mm39/mm39.fa.gz
-  fasta: ref/mm39/mm39.fa
-  fasta_md5: 41ace1b7157b98b393746aef5d1287a8
-  gtf_url: https://hgdownload.soe.ucsc.edu/goldenPath/mm39/bigZips/genes/mm39.ncbiRefSeq.gtf.gz
-  gtf_gz: ref/mm39/mm39.ncbiRefSeq.gtf.gz
-  gtf: ref/mm39/mm39.ncbiRefSeq.gtf
-  gtf_md5: 25e15ef5bdd7afc6d3447a757e5fa487
+species:
+  human:
+    references:
+      fasta_url: https://hgdownload.soe.ucsc.edu/goldenPath/hg38/bigZips/hg38.fa.gz
+      fasta_gz: ref/hg38/hg38.fa.gz
+      fasta: ref/hg38/hg38.fa
+      fasta_md5: 1c9dcaddfa41027f17cd8f7a82c7293b
+      gtf_url: https://hgdownload.soe.ucsc.edu/goldenPath/hg38/bigZips/genes/hg38.ncbiRefSeq.gtf.gz
+      gtf_gz: ref/hg38/hg38.ncbiRefSeq.gtf.gz
+      gtf: ref/hg38/hg38.ncbiRefSeq.gtf
+      gtf_md5: 15e6cab3a16e87f2564839f7500700e2
+    kraken2_db: ref/kraken2/hg38
+  mouse:
+    references:
+      fasta_url: https://hgdownload.soe.ucsc.edu/goldenPath/mm39/bigZips/mm39.fa.gz
+      fasta_gz: ref/mm39/mm39.fa.gz
+      fasta: ref/mm39/mm39.fa
+      fasta_md5: 41ace1b7157b98b393746aef5d1287a8
+      gtf_url: https://hgdownload.soe.ucsc.edu/goldenPath/mm39/bigZips/genes/mm39.ncbiRefSeq.gtf.gz
+      gtf_gz: ref/mm39/mm39.ncbiRefSeq.gtf.gz
+      gtf: ref/mm39/mm39.ncbiRefSeq.gtf
+      gtf_md5: 25e15ef5bdd7afc6d3447a757e5fa487
+    kraken2_db: ref/kraken2/mm39
 virus:
   bundled_url: https://data.broadinstitute.org/Trinity/CTAT_RESOURCE_LIB/VIRUS_INSERTION_FINDING_LIB_SUPPLEMENT/virus_db.nr.fasta
   bundled_fasta: ref/virus/ctat_virus_db.fasta
   local_dir: ref/virus/local
   merged_fasta: ref/virus/viral.fasta
   dedup_report: ref/virus/dedup.tsv
-kraken2_db: ref/kraken2/mm39
 pipelines:
   viralintegration:
     name: nf-core/viralintegration

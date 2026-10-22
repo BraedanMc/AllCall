@@ -1,6 +1,6 @@
 # AllCall
 
-Bash-first orchestration for mouse WGS cohorts: a **site** YAML for per-run settings, a versioned **pin** manifest for references and pipeline revisions, one germline samplesheet, and thin wrappers around [nf-core](https://nf-co.re/) viralintegration, Sarek (SV + SNP), and viralmetagenome.
+Bash-first orchestration for human or mouse WGS cohorts: a **site** YAML for per-run settings (including `species`), a versioned **pin** manifest for per-species references and pipeline revisions, one germline samplesheet, and thin wrappers around [nf-core](https://nf-co.re/) viralintegration, Sarek (SV + SNP), and viralmetagenome.
 
 Workflow design: [`docs/plans/2026-10-20-wgs-pipeline-workflow.md`](docs/plans/2026-10-20-wgs-pipeline-workflow.md).
 
@@ -9,7 +9,7 @@ Workflow design: [`docs/plans/2026-10-20-wgs-pipeline-workflow.md`](docs/plans/2
 | Step | Status |
 |------|--------|
 | Host tools in `opt/` (Bash 5, Java 17, yq, samtools, kraken2-build) | Done |
-| UCSC mm39 FASTA and RefSeq GTF | Done |
+| UCSC host FASTA and ncbiRefSeq GTF (hg38 or mm39 via `species`) | Done |
 | Virus FASTA (CTAT nr + local inserts) | Done |
 | Nextflow 26.10.3 and pinned nf-core pulls | Done |
 | Sample-sheet expansion | Done |
@@ -39,7 +39,7 @@ flowchart TD
   sex --> snp
 ```
 
-Viral integration, Sarek SV, and viralmetagenome start together. Sarek SNP starts after the CDS filter. Sex is filled from the viralintegration alignment when that BAM exists. One failure does not stop the other runs.
+Viral integration, Sarek SV, and viralmetagenome start together. Sarek SNP starts after the CDS filter. Sex is inferred from chrX/chrY (or `X`/`Y`) read counts in the viralintegration host BAM when that BAM exists. One failure does not stop the other runs.
 
 ## Requirements
 
@@ -61,12 +61,12 @@ Install or refresh only the host tools:
 
 | File | Who edits | Contents |
 |------|-----------|----------|
-| [`config/pin.yaml`](config/pin.yaml) | Maintainers on reference/pipeline bumps | mm39 URLs and MD5s, virus asset URLs/paths, Kraken2 DB path, nf-core **name + revision** per pipeline, Nextflow version/bin/home |
-| [`site.config.yaml`](site.config.yaml) (copy from [`example.config.yaml`](example.config.yaml)) | You per site/run | `scratch_root`, `work_dirs`, `samplesheet`, `results_dir`, pipeline **enabled** flags and Sarek tool choices, `container_profile`, optional `nextflow_configs` overlays |
+| [`config/pin.yaml`](config/pin.yaml) | Maintainers on reference/pipeline bumps | Per-species UCSC FASTA/GTF URLs and MD5s (`species.human`, `species.mouse`), virus asset URLs/paths, Kraken2 DB path per species, nf-core **name + revision** per pipeline, Nextflow version/bin/home |
+| [`site.config.yaml`](site.config.yaml) (copy from [`example.config.yaml`](example.config.yaml)) | You per site/run | `species` (`human` or `mouse`), `scratch_root`, `work_dirs`, `samplesheet`, `results_dir`, pipeline **enabled** flags and Sarek tool choices, `container_profile`, optional `nextflow_configs` overlays |
 
-`bin/lib.sh` loads **`config/pin.yaml` first**, then your site file (`ALLCALL_PIN` overrides the pin path). Keys should not overlap; site values win if they do.
+`bin/lib.sh` loads **`config/pin.yaml` first**, then your site file (`ALLCALL_PIN` overrides the pin path). Keys should not overlap; site values win if they do. After merge, `species` selects `references` and `kraken2_db` from `species.<name>` in the pin (default `human` if omitted).
 
-1. Copy and edit `site.config.yaml` (`scratch_root`, `samplesheet`, `container_profile`, enable/disable pipelines).
+1. Copy and edit `site.config.yaml` (`species`, `scratch_root`, `samplesheet`, `container_profile`, enable/disable pipelines). Use `species: human` for hg38 or `species: mouse` for mm39; `./bin/setup.sh` downloads the matching UCSC FASTA and ncbiRefSeq GTF.
 2. Cohort sheet: `sample`, `fastq_1`, `fastq_2` (optional `lane`). See [`samplesheets/cohort.csv.example`](samplesheets/cohort.csv.example).
 3. Create `ref/virus/local/` and add optional extra viral `.fa` / `.fasta` files before setup.
 

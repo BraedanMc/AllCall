@@ -9,6 +9,18 @@ tmp="$(mktemp -d)"
 trap 'rm -rf "$tmp"' EXIT
 
 cat >"${tmp}/pin.yaml" <<'YAML'
+species:
+  human:
+    references:
+      fasta_url: https://example.invalid/hg38.fa.gz
+      fasta_gz: ref/hg38.fa.gz
+      fasta: ref/hg38.fa
+      fasta_md5: ""
+      gtf_url: https://example.invalid/hg38.gtf.gz
+      gtf_gz: ref/hg38.gtf.gz
+      gtf: ref/hg38.gtf
+      gtf_md5: ""
+    kraken2_db: ref/kraken2/hg38
 nextflow:
   version: "26.10.3"
   bin: opt/nextflow

@@ -12,7 +12,10 @@ jobs:
       - name: Install tools
         run: |
           sudo apt-get update -qq
-          sudo apt-get install -y -qq shellcheck yq python3
+          sudo apt-get install -y -qq shellcheck python3 curl
+          # pin.yaml targets mikefarah yq (conda tool_yq); Ubuntu's apt yq is a different implementation.
+          curl -fsSL "https://github.com/mikefarah/yq/releases/download/v4.54.1/yq_linux_amd64" -o /usr/local/bin/yq
+          chmod +x /usr/local/bin/yq
       - run: chmod +x bin/*.sh tests/*.sh
       - run: |
           ./tests/smoke.sh

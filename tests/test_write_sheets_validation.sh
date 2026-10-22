@@ -10,20 +10,21 @@ scratch="${tmp}/scratch"
 mkdir -p "$scratch" "${tmp}/config" "${tmp}/sheets"
 
 yq "
-  .references.fasta_gz = \"${tmp}/ref/mm39.fa.gz\" |
-  .references.fasta = \"${tmp}/ref/mm39.fa\" |
-  .references.gtf_gz = \"${tmp}/ref/mm39.gtf.gz\" |
-  .references.gtf = \"${tmp}/ref/mm39.gtf\" |
+  .species.mouse.references.fasta_gz = \"${tmp}/ref/mm39.fa.gz\" |
+  .species.mouse.references.fasta = \"${tmp}/ref/mm39.fa\" |
+  .species.mouse.references.gtf_gz = \"${tmp}/ref/mm39.gtf.gz\" |
+  .species.mouse.references.gtf = \"${tmp}/ref/mm39.gtf\" |
   .virus.bundled_fasta = \"${tmp}/ref/virus/ctat.fasta\" |
   .virus.local_dir = \"${tmp}/ref/virus/local\" |
   .virus.merged_fasta = \"${tmp}/ref/virus/viral.fasta\" |
   .virus.dedup_report = \"${tmp}/ref/virus/dedup.tsv\" |
-  .kraken2_db = \"${tmp}/ref/kraken2/mm39\" |
+  .species.mouse.kraken2_db = \"${tmp}/ref/kraken2/mm39\" |
   .nextflow.bin = \"${tmp}/opt/nextflow\" |
   .nextflow.home = \"${tmp}/opt/nxf-home\"
 " "${ROOT}/config/pin.yaml" >"${tmp}/config/pin.yaml"
 
 cat >"${tmp}/site.config.yaml" <<YAML
+species: mouse
 scratch_root: ${scratch}
 work_dirs:
   viralintegration: nfVI

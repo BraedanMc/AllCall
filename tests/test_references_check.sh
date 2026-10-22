@@ -14,22 +14,24 @@ FASTA_MD5="8f969ecf131e837c6b1bb7f936cf009b"
 GTF_MD5="3c4cd47cd66df7b8a7ce821fca45e769"
 
 cat >"${tmp}/config/pin.yaml" <<YAML
-references:
-  fasta_url: https://example.invalid/mm39.fa.gz
-  fasta_gz: ${tmp}/ref/mm39.fa.gz
-  fasta: ${tmp}/ref/mm39.fa
-  fasta_md5: ${FASTA_MD5}
-  gtf_url: https://example.invalid/mm39.gtf.gz
-  gtf_gz: ${tmp}/ref/mm39.gtf.gz
-  gtf: ${tmp}/ref/mm39.gtf
-  gtf_md5: ${GTF_MD5}
+species:
+  human:
+    references:
+      fasta_url: https://example.invalid/mm39.fa.gz
+      fasta_gz: ${tmp}/ref/mm39.fa.gz
+      fasta: ${tmp}/ref/mm39.fa
+      fasta_md5: ${FASTA_MD5}
+      gtf_url: https://example.invalid/mm39.gtf.gz
+      gtf_gz: ${tmp}/ref/mm39.gtf.gz
+      gtf: ${tmp}/ref/mm39.gtf
+      gtf_md5: ${GTF_MD5}
+    kraken2_db: ${tmp}/ref/kraken2
 virus:
   bundled_url: https://example.invalid/virus.fa
   bundled_fasta: ${tmp}/ref/virus.fa
   local_dir: ${tmp}/ref/local
   merged_fasta: ${tmp}/ref/viral.fasta
   dedup_report: ${tmp}/ref/dedup.tsv
-kraken2_db: ${tmp}/ref/kraken2
 pipelines:
   viralintegration:
     name: nf-core/viralintegration
@@ -41,6 +43,7 @@ nextflow:
 YAML
 
 cat >"${tmp}/site.config.yaml" <<YAML
+species: human
 scratch_root: ${tmp}/scratch
 work_dirs:
   viralintegration: nfVI

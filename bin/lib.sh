@@ -31,7 +31,32 @@ load_config() {
   CONFIG_MERGED="$(mktemp)"
   export CONFIG_MERGED
   # pin.yaml first; site config overrides on key overlap (keep keys disjoint).
-  yq -s '.[0] * .[1]' "$PIN" "$CONFIG" >"$CONFIG_MERGED"
+  yq eval-all 'select(fileIndex == 0) * select(fileIndex == 1)' "$PIN" "$CONFIG" >"$CONFIG_MERGED"
+  resolve_species_config
+}
+
+resolve_species_config() {
+  local species tmp
+  # Site species is a scalar; pin species is a map — read the toggle from the site file.
+  species="$(yq -r '.species // "human"' "$CONFIG")"
+  case "$species" in
+    human|mouse) ;;
+    *)
+      die "species must be human or mouse (got '${species}')"
+      ;;
+  esac
+  if [[ "$(yq -r ".species.${species}.references.fasta_url" "$PIN")" == "null" ]]; then
+    die "pin manifest missing species.${species}.references"
+  fi
+  if [[ "$(yq -r ".species.${species}.kraken2_db" "$PIN")" == "null" ]]; then
+    die "pin manifest missing species.${species}.kraken2_db"
+  fi
+  tmp="$(mktemp)"
+  yq "
+    .references = (load(\"${PIN}\") | .species.${species}.references) |
+    .kraken2_db = (load(\"${PIN}\") | .species.${species}.kraken2_db)
+  " "$CONFIG_MERGED" >"$tmp"
+  mv "$tmp" "$CONFIG_MERGED"
 }
 
 cfg() {
@@ -414,7 +439,7 @@ kraken_build() {
 }
 
 kraken_check() {
-  # Paused until the mm39 Kraken2 build is run on a machine with enough disk.
+  # Paused until a host Kraken2 build is run on a machine with enough disk.
   return 0
   # local db
   # db="$(abs_path "$(cfg '.kraken2_db')")"
