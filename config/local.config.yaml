@@ -1,14 +1,16 @@
 # Local workstation site config (no HPC scratch paths).
 # Copy: cp config/local.config.yaml site.config.yaml
 # Or pass this path to ./bin/setup.sh, ./bin/check.sh, ./bin/run_cohort.sh --config ...
-scratch_root: scratch
+# scratch_root: ~ and $HOME/... are expanded by bin/lib.sh (see expand_user_path).
+scratch_root: ~/Documents/projects/allcall/scratch
 work_dirs:
   viralintegration: nfVI
   sarek_sv: nfSarekSV
   sarek_snp: nfSarekSNP
   viralmetagenome: nfVirMeta
-# Place FASTQs under data/ (see samplesheets/cohort.local.example) or edit the sheet.
+# FASTQs: repo-relative paths under data/ (see samplesheets/cohort.local.example).
 samplesheet: samplesheets/cohort.local.example
+# Cohort outputs (matrix, BAMs, sheets) stay in the clone; Nextflow -work-dir uses scratch_root.
 results_dir: results
 pipelines:
   viralintegration:
@@ -19,7 +21,8 @@ pipelines:
     tools_snp: haplotypecaller
   viralmetagenome:
     enabled: true
-container_profile: docker
+# Prefer apptainer/singularity on Linux; use container_profile: docker if only Docker is installed.
+container_profile: apptainer
 sex_xy_min_ratio: 0.1
 nextflow_configs:
   - config/nextflow/local.config
