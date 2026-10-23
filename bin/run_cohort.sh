@@ -51,6 +51,7 @@ ANALYSES=(viralintegration sarek_sv cds_filter sarek_snp viralmetagenome)
 matrix="${run_root}/matrix.tsv"
 
 declare -A STATUS
+declare -A snp_ready=()
 matrix_write() {
   local tmp="${matrix}.tmp" s a
   {
@@ -144,7 +145,7 @@ nf_cmd() {
   while IFS= read -r c; do
     [[ -n "$c" && "$c" != "null" ]] && extra+=(-c "$(abs_path "$c")")
   done < <(yq -r '.nextflow_configs[]?' "$CONFIG_MERGED")
-  printf '%q ' "$bin" run "$pipeline" -r "$revision" -resume -work-dir "$work" -params-file "$params" -profile "$(nf_profile)" "${extra[@]}"
+  printf '%q ' "$bin" run "$pipeline" -r "$revision" -resume -work-dir "$work" -c "$params" -profile "$(nf_profile)" "${extra[@]}"
 }
 
 cmds=() cmd_names=()
@@ -221,7 +222,6 @@ snp_started=0 snp_pid=""
 cds_logged=0
 idle_pass=0
 sarek_sv_finished=0
-declare -A snp_ready
 
 mark_done() {
   local pid="$1"
@@ -273,7 +273,7 @@ while :; do
     [[ -f "${filt_dir}/${sample}.cds.bam" ]] && snp_ready[$sample]=1
   done
 
-  if [[ "$snp_started" == 0 && ${#snp_ready[@]} -gt 0 && "$(cfg '.pipelines.sarek.enabled')" == "true" ]] && cds_filter_settled; then
+  if [[ "$snp_started" == 0 && ${#snp_ready[@]:-0} -gt 0 && "$(cfg '.pipelines.sarek.enabled')" == "true" ]] && cds_filter_settled; then
     mapfile -t ready < <(printf '%s\n' "${!snp_ready[@]}" | sort)
     {
       echo "patient,sex,status,sample,bam"
