@@ -240,15 +240,7 @@ mark_done() {
 }
 
 cds_filter_settled() {
-  [[ "$sarek_sv_finished" == 1 ]] || return 1
-  local sample sv_bam st
-  for sample in "${samples[@]}"; do
-    sv_bam="${out_sv}/preprocessing/markduplicates/${sample}/${sample}.md.cram"
-    [[ -f "$sv_bam" ]] || continue
-    st="${STATUS["${sample}|cds_filter"]:-not_started}"
-    [[ "$st" != not_started ]] || return 1
-  done
-  return 0
+  cohort_cds_filter_settled "$sarek_sv_finished" "$out_sv" samples STATUS
 }
 
 while :; do
