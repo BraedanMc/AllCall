@@ -503,3 +503,19 @@ check_scratch() {
   local test="${scratch}/.allcall_write_test"
   echo ok >"$test" && rm -f "$test" || die "setup: scratch_root is not writable: ${scratch}"
 }
+
+# True when Sarek SV cohort pass finished and every sample with an SV BAM has cds_filter status set.
+cohort_cds_filter_settled() {
+  local sarek_sv_finished="$1" out_sv="$2"
+  local -n samples_ref="$3"
+  local -n status_ref="$4"
+  [[ "$sarek_sv_finished" == 1 ]] || return 1
+  local sample sv_bam st
+  for sample in "${samples_ref[@]}"; do
+    sv_bam="${out_sv}/preprocessing/markduplicates/${sample}/${sample}.md.cram"
+    [[ -f "$sv_bam" ]] || continue
+    st="${status_ref["${sample}|cds_filter"]:-not_started}"
+    [[ "$st" != not_started ]] || return 1
+  done
+  return 0
+}

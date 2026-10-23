@@ -7,6 +7,10 @@ source "${ROOT}/bin/lib.sh"
 
 load_config "${ROOT}/config/local.config.yaml"
 
+[[ "$(cfg '.species')" == "human" ]] || {
+  echo "local config: expected species human" >&2
+  exit 1
+}
 [[ "$(cfg '.container_profile')" == "docker" ]] || {
   echo "local config: expected container_profile docker" >&2
   exit 1
