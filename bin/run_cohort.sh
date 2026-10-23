@@ -89,7 +89,9 @@ params {
   outdir = "${run_root}/viralintegration"
   fasta = "$(abs_path "$(cfg '.references.fasta')")"
   gtf = "$(abs_path "$(cfg '.references.gtf')")"
-  virus_fasta = "$(abs_path "$(cfg '.virus.merged_fasta')")"
+  viral_fasta = "$(abs_path "$(cfg '.virus.merged_fasta')")"
+  max_cpus = 8
+  max_memory = "20.GB"
 }
 EOF
       ;;
@@ -273,7 +275,7 @@ while :; do
     [[ -f "${filt_dir}/${sample}.cds.bam" ]] && snp_ready[$sample]=1
   done
 
-  if [[ "$snp_started" == 0 && ${#snp_ready[@]:-0} -gt 0 && "$(cfg '.pipelines.sarek.enabled')" == "true" ]] && cds_filter_settled; then
+  if [[ "$(cfg '.pipelines.sarek.enabled')" == "true" && "$snp_started" == 0 && ${#snp_ready[@]} -gt 0 && cds_filter_settled ]]; then
     mapfile -t ready < <(printf '%s\n' "${!snp_ready[@]}" | sort)
     {
       echo "patient,sex,status,sample,bam"

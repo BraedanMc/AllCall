@@ -39,7 +39,7 @@ pipelines:
     name: nf-core/viralmetagenome
     revision: 1.2.0
 nextflow:
-  version: "26.10.3"
+  version: "24.10.5"
   bin: opt/nextflow
   home: opt/nxf-home
 # Host tools installed by setup into tool_prefix. Not loaded from modules.
