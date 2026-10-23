@@ -173,6 +173,10 @@ snp_cmd="$(nf_cmd "$(pipeline_name sarek)" "$(pipeline_revision sarek)" "$(work_
 for c in "${cmds[@]}"; do echo "$c"; done
 echo "$snp_cmd"
 
+if [[ "$(cfg '.pipelines.viralintegration.enabled')" == "true" ]]; then
+  small_host_check
+fi
+
 if [[ "$DRY_RUN" == 1 ]]; then
   for s in "${samples[@]}"; do
     for n in viralintegration sarek_sv viralmetagenome; do

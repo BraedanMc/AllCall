@@ -543,3 +543,62 @@ cohort_cds_filter_settled() {
   done
   return 0
 }
+
+small_host_enabled() {
+  [[ "$(cfg '.small_host // false')" == "true" ]]
+}
+
+vi_star_index_root() {
+  abs_path "ref/vi_star"
+}
+
+vi_star_indices_ready() {
+  local root="$1"
+  [[ -f "${root}/host_star/star/Genome" && -f "${root}/plus_star/star/Genome" ]]
+}
+
+small_host_hpc_notice() {
+  local species root
+  species="$(cfg '.species // "human"')"
+  root="$(vi_star_index_root)"
+  cat >&2 <<EOF
+check: small_host is enabled with viralintegration — this machine must not build hg38/mm39 STAR indices inside nf-core/viralintegration.
+
+Typical Mac laptops (~24 GB RAM) and Docker Desktop with low memory limits (often <32 GiB) cannot run STAR_GENOMEGENERATE for human/mouse host genomes inside the VI workflow (often ~48+ GiB). You will see OOM (exit 137) if you try.
+
+Build indices on a large-memory HPC node, then copy ref/vi_star (and ref/ if needed) back to this clone.
+
+SLURM example:
+  #SBATCH --cpus-per-task=16
+  #SBATCH --mem=64G
+  #SBATCH --time=8:00:00
+  cd /path/to/AllCall
+  ./bin/hpc_build_vi_star_indices.sh --species ${species}
+
+Sync to Mac (adjust host and paths):
+  rsync -avP user@hpc:/path/to/AllCall/ref/vi_star/ ${root}/
+
+Required after sync:
+  ${root}/host_star/star/Genome
+  ${root}/plus_star/star/Genome
+
+Then re-run: ./bin/check.sh <site.config.yaml>
+EOF
+}
+
+small_host_check() {
+  if [[ "$(cfg '.pipelines.viralintegration.enabled')" != "true" ]]; then
+    return 0
+  fi
+  if ! small_host_enabled; then
+    return 0
+  fi
+  local root
+  root="$(vi_star_index_root)"
+  if vi_star_indices_ready "$root"; then
+    echo "check: small_host enabled; prebuilt VI STAR indices ok (${root})"
+    return 0
+  fi
+  small_host_hpc_notice
+  die "check: missing prebuilt VI STAR indices under ${root}"
+}

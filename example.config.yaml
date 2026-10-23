@@ -1,5 +1,6 @@
 # human (hg38) or mouse (mm39); reference URLs and paths come from config/pin.yaml species.*
 species: human
+# small_host: false  # true on RAM-limited Macs: requires ref/vi_star from ./bin/hpc_build_vi_star_indices.sh on HPC (see docs/local-mac-runbook.md).
 scratch_root: /scratch.global/bmcc
 work_dirs:
   viralintegration: nfVI
