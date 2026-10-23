@@ -11,7 +11,7 @@ Workflow design: [`docs/plans/2026-10-20-wgs-pipeline-workflow.md`](docs/plans/2
 | Host tools in `opt/` (Bash 5, Java 17, yq, samtools, kraken2-build) | Done |
 | UCSC host FASTA and ncbiRefSeq GTF (hg38 or mm39 via `species`) | Done |
 | Virus FASTA (CTAT nr + local inserts) | Done |
-| Nextflow 26.10.3 and pinned nf-core pulls | Done |
+| Nextflow 24.10.5 (pin; see `docs/bug-reports/2026-10-23-nextflow-26-viralintegration.md`) and pinned nf-core pulls | Done |
 | Sample-sheet expansion | Done |
 | Kraken2 host database | Paused |
 | Cohort FASTQs and `samplesheets/cohort.csv` | Not started |

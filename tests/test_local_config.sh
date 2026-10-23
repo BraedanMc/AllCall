@@ -42,6 +42,12 @@ for rel in "${overlays[@]}"; do
     echo "local config: overlay should document container options (${rel})" >&2
     exit 1
   }
+  if [[ "$(basename "$rel")" == "local.config" ]]; then
+    if grep -A6 '^singularity {' "$(abs_path "$rel")" | grep -q 'enabled = true'; then
+      echo "local config: local.config must not set singularity.enabled true (-c overrides -profile docker)" >&2
+      exit 1
+    fi
+  fi
 done
 
 scratch_home="${HOME}/Documents/projects/allcall/scratch"

@@ -37,7 +37,7 @@ pipelines:
     name: nf-core/viralintegration
     revision: 0.1.1
 nextflow:
-  version: "26.10.3"
+  version: "24.10.5"
   bin: ${tmp}/opt/nextflow
   home: ${tmp}/opt/nxf-home
 YAML

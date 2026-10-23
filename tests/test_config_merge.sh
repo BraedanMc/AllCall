@@ -22,7 +22,7 @@ species:
       gtf_md5: ""
     kraken2_db: ref/kraken2/hg38
 nextflow:
-  version: "26.10.3"
+  version: "24.10.5"
   bin: opt/nextflow
   home: opt/nxf-home
 scratch_root: from_pin_should_not_win
@@ -64,7 +64,7 @@ ALLCALL_PIN="${tmp}/pin.yaml" load_config "${tmp}/site.config.yaml"
   echo "config merge: site sex_xy_min_ratio missing" >&2
   exit 1
 }
-[[ "$(cfg '.nextflow.version')" == "26.10.3" ]] || {
+[[ "$(cfg '.nextflow.version')" == "24.10.5" ]] || {
   echo "config merge: nextflow.version should come from pin" >&2
   exit 1
 }

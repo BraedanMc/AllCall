@@ -38,8 +38,9 @@ pipelines:
   viralmetagenome:
     name: nf-core/viralmetagenome
     revision: 1.2.0
+# Nextflow 26.x breaks nf-core/viralintegration 0.1.1; see docs/bug-reports/2026-10-23-nextflow-26-viralintegration.md
 nextflow:
-  version: "26.10.3"
+  version: "24.10.5"
   bin: opt/nextflow
   home: opt/nxf-home
 # Host tools installed by setup into tool_prefix. Not loaded from modules.
