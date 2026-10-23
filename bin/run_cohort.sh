@@ -275,7 +275,7 @@ while :; do
     [[ -f "${filt_dir}/${sample}.cds.bam" ]] && snp_ready[$sample]=1
   done
 
-  if [[ "$(cfg '.pipelines.sarek.enabled')" == "true" && "$snp_started" == 0 && ${#snp_ready[@]} -gt 0 && cds_filter_settled ]]; then
+  if [[ "$(cfg '.pipelines.sarek.enabled')" == "true" && "$snp_started" == 0 && ${#snp_ready[@]} -gt 0 ]] && cds_filter_settled; then
     mapfile -t ready < <(printf '%s\n' "${!snp_ready[@]}" | sort)
     {
       echo "patient,sex,status,sample,bam"
