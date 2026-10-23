@@ -7,6 +7,7 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 CONFIG="${1:-${ROOT}/site.config.yaml}"
 CONFIG="$(cd "$(dirname "$CONFIG")" && pwd)/$(basename "$CONFIG")"
 load_config "$CONFIG"
+small_host_check
 
 tools_check
 references_check
