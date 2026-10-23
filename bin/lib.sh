@@ -267,6 +267,25 @@ EOF
   source "$env_file"
 }
 
+install_mikefarah_yq() {
+  local prefix="$1" ver="$2" arch url dest
+  ver="${ver#v}"
+  case "$(uname -m)" in
+    arm64) arch=arm64 ;;
+    x86_64) arch=amd64 ;;
+    *) die "tools: unsupported arch for yq: $(uname -m)" ;;
+  esac
+  url="https://github.com/mikefarah/yq/releases/download/v${ver}/yq_darwin_${arch}"
+  dest="${prefix}/bin/yq"
+  mkdir -p "${prefix}/bin"
+  curl -fsSL --max-time 120 -o "${dest}.partial" "$url" || {
+    rm -f "${dest}.partial"
+    die "tools: failed to download mikefarah yq v${ver}"
+  }
+  chmod +x "${dest}.partial"
+  mv "${dest}.partial" "$dest"
+}
+
 tools_ready() {
   local prefix="$1" stamp="$2" pin="$3"
   java_home_for "$prefix" >/dev/null || return 1
@@ -308,16 +327,21 @@ install_host_tools() {
   spec=(
     "bash=$(pin_field tool_bash "$pin")"
     "openjdk=$(pin_field tool_openjdk "$pin")"
-    "yq=$(pin_field tool_yq "$pin")"
     "samtools=$(pin_field tool_samtools "$pin")"
     "kraken2=$(pin_field tool_kraken2 "$pin")"
   )
+  if [[ "$(uname -s)" != Darwin ]]; then
+    spec+=("yq=$(pin_field tool_yq "$pin")")
+  fi
   if [[ -x "${prefix}/bin/java" ]]; then
     "$mm_bin" install -y -p "$prefix" -c conda-forge -c bioconda "${spec[@]}" \
       || die "tools: install failed"
   else
     "$mm_bin" create -y -p "$prefix" -c conda-forge -c bioconda "${spec[@]}" \
       || die "tools: create failed"
+  fi
+  if [[ "$(uname -s)" == Darwin ]]; then
+    install_mikefarah_yq "$prefix" "$(pin_field tool_yq "$pin")"
   fi
   tools_spec_stamp "$pin" >"$stamp"
   write_tools_env "$prefix"
