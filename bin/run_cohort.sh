@@ -144,9 +144,9 @@ nf_cmd() {
   local pipeline="$1" revision="$2" work="$3" params="$4"
   local bin extra=() c
   bin="$(abs_path "$(cfg '.nextflow.bin')")"
-  while IFS= read -r c; do
-    [[ -n "$c" && "$c" != "null" ]] && extra+=(-c "$(abs_path "$c")")
-  done < <(yq -r '.nextflow_configs[]?' "$CONFIG_MERGED")
+  while IFS= read -r -d '' c; do
+    extra+=("$c")
+  done < <(nf_nextflow_config_args)
   printf '%q ' "$bin" run "$pipeline" -r "$revision" -resume -work-dir "$work" -c "$params" -profile "$(nf_profile)" "${extra[@]}"
 }
 

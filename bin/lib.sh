@@ -388,6 +388,23 @@ nextflow_env() {
   export NXF_DISABLE_CHECK_LATEST=true
 }
 
+# Nextflow -c overlays from site config; auto-append Apptainer overlay when needed.
+nf_nextflow_config_args() {
+  local extra=() c rel apptainer_overlay seen_apptainer=0
+  apptainer_overlay="config/nextflow/local.apptainer.config"
+  while IFS= read -r c; do
+    [[ -n "$c" && "$c" != "null" ]] || continue
+    rel="${c#"${ALLCALL_ROOT}/"}"
+    [[ "$rel" == "$apptainer_overlay" ]] && seen_apptainer=1
+    extra+=(-c "$(abs_path "$c")")
+  done < <(yq -r '.nextflow_configs[]?' "$CONFIG_MERGED")
+  # local.config disables Singularity for Docker; re-enable when site uses Apptainer (after local.config).
+  if [[ "$(cfg '.container_profile')" == "apptainer" && "$seen_apptainer" == 0 ]]; then
+    extra+=(-c "$(abs_path "$apptainer_overlay")")
+  fi
+  printf '%s\0' "${extra[@]}"
+}
+
 nf_version_ok() {
   local bin ver out
   bin="$(abs_path "$(cfg '.nextflow.bin')")"
