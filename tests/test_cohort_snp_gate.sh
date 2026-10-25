@@ -55,4 +55,23 @@ expect_gate "single sample waiting on cds_filter" no 1
 STATUS["Solo|cds_filter"]=failed
 expect_gate "terminal cds_filter status counts as settled" yes 1
 
+expect_vi_gate() {
+  local label="$1" vi_enabled="$2" vi_finished="$3" expect_ok="$4"
+  if cohort_vi_finished_for_snp "$vi_enabled" "$vi_finished"; then
+    [[ "$expect_ok" == yes ]] || {
+      echo "test_cohort_snp_gate: ${label} expected VI gate closed" >&2
+      exit 1
+    }
+  else
+    [[ "$expect_ok" == no ]] || {
+      echo "test_cohort_snp_gate: ${label} expected VI gate open" >&2
+      exit 1
+    }
+  fi
+}
+
+expect_vi_gate "VI disabled ignores vi_finished" false 0 yes
+expect_vi_gate "VI enabled; cohort pass still running" true 0 no
+expect_vi_gate "VI enabled; cohort pass finished" true 1 yes
+
 echo "test_cohort_snp_gate: ok"

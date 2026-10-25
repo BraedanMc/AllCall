@@ -528,6 +528,15 @@ check_scratch() {
   echo ok >"$test" && rm -f "$test" || die "setup: scratch_root is not writable: ${scratch}"
 }
 
+# True when viralintegration cohort pass finished (or VI disabled). SNP sex comes from VI alignments.
+cohort_vi_finished_for_snp() {
+  local vi_enabled="$1" vi_finished="$2"
+  if [[ "$vi_enabled" != "true" ]]; then
+    return 0
+  fi
+  [[ "$vi_finished" == 1 ]]
+}
+
 # True when Sarek SV cohort pass finished and every sample with an SV BAM has cds_filter status set.
 cohort_cds_filter_settled() {
   local sarek_sv_finished="$1" out_sv="$2"
