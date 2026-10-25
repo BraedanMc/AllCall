@@ -29,9 +29,13 @@ progress_event() {
 }
 
 progress_event check launched
-if ! "${ALLCALL_BIN}/check.sh" "$CONFIG"; then
-  progress_event check failed
-  exit 2
+if [[ "${ALLCALL_SKIP_COHORT_CHECK:-}" != 1 ]]; then
+  if ! "${ALLCALL_BIN}/check.sh" "$CONFIG"; then
+    progress_event check failed
+    exit 2
+  fi
+else
+  progress_event check skipped
 fi
 progress_event check completed
 
