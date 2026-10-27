@@ -267,7 +267,8 @@ while :; do
       fi
       matrix_write
     fi
-    vi_bam="${out_vi}/star_align/${sample}/${sample}.Aligned.sortedByCoord.out.bam"
+    # nf-core/viralintegration 0.1.1: STAR_ALIGN_HOST uses ext.prefix "${meta.id}.host" and publishDir .../star/
+    vi_bam="${out_vi}/star/${sample}.host.Aligned.sortedByCoord.out.bam"
     if [[ -f "$vi_bam" && -z "${sex_map[$sample]:-}" ]]; then
       sex_map[$sample]="$(infer_sex "$vi_bam")"
       echo -e "${sample}\t${sex_map[$sample]}" >>"$sex_path"
