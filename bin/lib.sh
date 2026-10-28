@@ -543,3 +543,18 @@ cohort_cds_filter_settled() {
   done
   return 0
 }
+
+cohort_nf_profile() {
+  if [[ "$(cfg '.container_profile')" == "docker" ]]; then echo docker; else echo singularity; fi
+}
+
+# Quoted nextflow run argv (params + site overlays via -c; not -params-file — NF 26 + viralintegration 0.1.1).
+cohort_nf_cmd() {
+  local pipeline="$1" revision="$2" work="$3" params="$4"
+  local bin extra=() c
+  bin="$(abs_path "$(cfg '.nextflow.bin')")"
+  while IFS= read -r c; do
+    [[ -n "$c" && "$c" != "null" ]] && extra+=(-c "$(abs_path "$c")")
+  done < <(yq -r '.nextflow_configs[]?' "$CONFIG_MERGED")
+  printf '%q ' "$bin" run "$pipeline" -r "$revision" -resume -work-dir "$work" -c "$params" -profile "$(cohort_nf_profile)" "${extra[@]}"
+}
