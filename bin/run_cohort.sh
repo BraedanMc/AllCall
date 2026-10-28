@@ -136,42 +136,28 @@ EOF
   esac
 }
 
-nf_profile() {
-  if [[ "$(cfg '.container_profile')" == "docker" ]]; then echo docker; else echo singularity; fi
-}
-
-nf_cmd() {
-  local pipeline="$1" revision="$2" work="$3" params="$4"
-  local bin extra=() c
-  bin="$(abs_path "$(cfg '.nextflow.bin')")"
-  while IFS= read -r c; do
-    [[ -n "$c" && "$c" != "null" ]] && extra+=(-c "$(abs_path "$c")")
-  done < <(yq -r '.nextflow_configs[]?' "$CONFIG_MERGED")
-  printf '%q ' "$bin" run "$pipeline" -r "$revision" -resume -work-dir "$work" -c "$params" -profile "$(nf_profile)" "${extra[@]}"
-}
-
 cmds=() cmd_names=()
 if [[ "$(cfg '.pipelines.viralintegration.enabled')" == "true" ]]; then
   p="${run_root}/params/viralintegration.config"
   write_params viralintegration "$p"
-  cmds+=("$(nf_cmd "$(pipeline_name viralintegration)" "$(pipeline_revision viralintegration)" "$(work_dir viralintegration)" "$p")")
+  cmds+=("$(cohort_nf_cmd "$(pipeline_name viralintegration)" "$(pipeline_revision viralintegration)" "$(work_dir viralintegration)" "$p")")
   cmd_names+=(viralintegration)
 fi
 if [[ "$(cfg '.pipelines.sarek.enabled')" == "true" ]]; then
   p="${run_root}/params/sarek_sv.config"
   write_params sarek_sv "$p"
-  cmds+=("$(nf_cmd "$(pipeline_name sarek)" "$(pipeline_revision sarek)" "$(work_dir sarek_sv)" "$p")")
+  cmds+=("$(cohort_nf_cmd "$(pipeline_name sarek)" "$(pipeline_revision sarek)" "$(work_dir sarek_sv)" "$p")")
   cmd_names+=(sarek_sv)
 fi
 if [[ "$(cfg '.pipelines.viralmetagenome.enabled')" == "true" ]]; then
   p="${run_root}/params/viralmetagenome.config"
   write_params viralmetagenome "$p"
-  cmds+=("$(nf_cmd "$(pipeline_name viralmetagenome)" "$(pipeline_revision viralmetagenome)" "$(work_dir viralmetagenome)" "$p")")
+  cmds+=("$(cohort_nf_cmd "$(pipeline_name viralmetagenome)" "$(pipeline_revision viralmetagenome)" "$(work_dir viralmetagenome)" "$p")")
   cmd_names+=(viralmetagenome)
 fi
 p="${run_root}/params/sarek_snp.config"
 write_params sarek_snp "$p"
-snp_cmd="$(nf_cmd "$(pipeline_name sarek)" "$(pipeline_revision sarek)" "$(work_dir sarek_snp)" "$p")"
+snp_cmd="$(cohort_nf_cmd "$(pipeline_name sarek)" "$(pipeline_revision sarek)" "$(work_dir sarek_snp)" "$p")"
 
 for c in "${cmds[@]}"; do echo "$c"; done
 echo "$snp_cmd"
