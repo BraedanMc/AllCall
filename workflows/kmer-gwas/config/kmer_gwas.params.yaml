@@ -1,0 +1,59 @@
+# k-mer GWAS run parameters — edit paths before running.
+# Relative paths resolve against project_root unless absolute.
+
+run_name: PLACEHOLDER_RUN_NAME
+
+# AllCall repository root (host reference FASTA lives under ref/hg38/ after ./bin/setup.sh)
+project_root: PLACEHOLDER_PROJECT_ROOT
+
+samplesheet: input/kmer-gwas/kmer_gwas.samples.csv
+phenotype_sheet: input/kmer-gwas/kmer_gwas.phenos.tsv
+
+# Raw WGS FASTQs live on HPC scratch (same scratch_root as AllCall example.config.yaml)
+fastq_staging_dir: /scratch.global/bmcc/kmer-gwas/PLACEHOLDER_RUN_NAME/fastq_staged
+work_dir: /scratch.global/bmcc/kmer-gwas/PLACEHOLDER_RUN_NAME/work
+results_dir: results/kmer-gwas/PLACEHOLDER_RUN_NAME
+
+reference:
+  fasta: ref/hg38/hg38.fa
+  annotation: ref/hg38/hg38.ncbiRefSeq.gtf
+
+kmer_length: 31
+kmc_min_count: 2
+
+kmers_gwas:
+  threads: 16
+  minor_allele_count: 2
+  minor_allele_freq: 0.05
+  strand_min_percent: 0.2
+  n_permutations: 100
+  kmers_number: 10001
+  min_data_points: 15
+
+tools:
+  kmers_bin: workflows/kmer-gwas/vendor/kmersGWAS/bin
+  kmc: workflows/kmer-gwas/vendor/kmersGWAS/external_programs/kmc_v3
+  kmers_gwas_py: workflows/kmer-gwas/vendor/kmersGWAS/kmers_gwas.py
+  python2: python2.7
+
+post_gwas:
+  enabled: false
+  significant_kmers_list: ""
+  bowtie2_index_dir: /scratch.global/bmcc/kmer-gwas/PLACEHOLDER_RUN_NAME/bowtie2_hg38
+  mapping_results_dir: results/kmer-gwas/PLACEHOLDER_RUN_NAME/post_gwas_mapping
+
+executor: slurm
+
+slurm:
+  account: PLACEHOLDER_SLURM_ACCOUNT
+  partition: PLACEHOLDER_PARTITION
+  qos: ""
+  time: "72:00:00"
+  mem: "128G"
+  cpus_per_task: 16
+
+container:
+  enabled: true
+  engine: apptainer
+  image: PLACEHOLDER_IMAGE
+  # Example bind flags added by run_kmer_gwas.sh: work_dir, fastq_staging_dir, results_dir, ref

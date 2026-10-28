@@ -9,4 +9,8 @@ opt/
 ref/
 results/
 runs/
+workflows/kmer-gwas/vendor/K-mer-GWAS-pipeline/
+workflows/kmer-gwas/vendor/kmersGWAS/*
+!workflows/kmer-gwas/vendor/kmersGWAS/.gitkeep
+workflows/kmer-gwas/scratch/
 .allcall_setup_sheets_check/
