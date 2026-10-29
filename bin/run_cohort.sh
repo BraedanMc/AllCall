@@ -256,7 +256,8 @@ while :; do
 
   for sample in "${samples[@]}"; do
     sv_bam="${out_sv}/preprocessing/markduplicates/${sample}/${sample}.md.cram"
-    if [[ -f "$sv_bam" && ! -f "${filt_dir}/${sample}.cds.bam" ]]; then
+    if [[ -f "$sv_bam" && ! -f "${filt_dir}/${sample}.cds.bam" &&
+      "${STATUS["${sample}|cds_filter"]:-not_started}" != failed ]]; then
       [[ "$cds_logged" == 1 ]] || { progress_event cds_filter launched; cds_logged=1; }
       if samtools view -b -L "$bed_path" "$sv_bam" -o "${filt_dir}/${sample}.cds.bam"; then
         STATUS["${sample}|cds_filter"]=succeeded
@@ -313,3 +314,19 @@ while :; do
   fi
   sleep 2
 done
+
+exit_code=0
+for s in "${samples[@]}"; do
+  for a in "${ANALYSES[@]}"; do
+    [[ "${STATUS["${s}|${a}"]:-not_started}" == failed ]] && exit_code=1
+  done
+done
+if [[ "$(cfg '.pipelines.sarek.enabled')" == "true" ]]; then
+  for s in "${samples[@]}"; do
+    if [[ -f "${filt_dir}/${s}.cds.bam" && "${STATUS["${s}|sarek_snp"]:-not_started}" == not_started ]]; then
+      echo "run_cohort: sample ${s} has CDS BAM but was not included in the Sarek SNP pass" >&2
+      exit_code=1
+    fi
+  done
+fi
+exit "$exit_code"
