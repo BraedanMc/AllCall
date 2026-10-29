@@ -190,6 +190,8 @@ if [[ "$DRY_RUN" == 1 ]]; then
 fi
 
 need_cmd samtools
+ref_fasta="$(abs_path "$(cfg '.references.fasta')")"
+[[ -f "$ref_fasta" ]] || die "CDS filter: host FASTA missing at ${ref_fasta}"
 nextflow_env
 out_vi="${run_root}/viralintegration"
 out_sv="${run_root}/sarek_sv"
@@ -258,7 +260,7 @@ while :; do
     sv_bam="${out_sv}/preprocessing/markduplicates/${sample}/${sample}.md.cram"
     if [[ -f "$sv_bam" && ! -f "${filt_dir}/${sample}.cds.bam" ]]; then
       [[ "$cds_logged" == 1 ]] || { progress_event cds_filter launched; cds_logged=1; }
-      if samtools view -b -L "$bed_path" "$sv_bam" -o "${filt_dir}/${sample}.cds.bam"; then
+      if samtools view -b -T "$ref_fasta" -L "$bed_path" "$sv_bam" -o "${filt_dir}/${sample}.cds.bam"; then
         STATUS["${sample}|cds_filter"]=succeeded
         progress_event cds_filter completed
       else
