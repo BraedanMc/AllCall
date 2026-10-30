@@ -28,3 +28,5 @@ jobs:
           ./tests/test_cds_bed.sh
           ./tests/test_cohort_snp_gate.sh
           ./tests/test_expand_user_path.sh
+          ./tests/test_nf_version_ok.sh
+          ./tests/test_run_cohort_regressions.sh

@@ -115,4 +115,30 @@ if ( work_dir unknown_key ) >/dev/null 2>&1; then
   exit 1
 fi
 
+cat >"${tmp}/bad_species.yaml" <<YAML
+species: platypus
+scratch_root: ${tmp}/scratch_rel
+work_dirs:
+  viralintegration: nfVI
+  sarek_sv: nfSarekSV
+  sarek_snp: nfSarekSNP
+  viralmetagenome: nfVirMeta
+samplesheet: ${tmp}/cohort.csv
+results_dir: ${tmp}/results
+pipelines:
+  viralintegration:
+    enabled: false
+  sarek:
+    enabled: false
+  viralmetagenome:
+    enabled: false
+container_profile: docker
+sex_xy_min_ratio: 0.1
+nextflow_configs: []
+YAML
+if ( ALLCALL_PIN="${tmp}/pin.yaml" load_config "${tmp}/bad_species.yaml" ) >/dev/null 2>&1; then
+  echo "config merge: invalid species should fail load_config" >&2
+  exit 1
+fi
+
 echo "test_config_merge: ok"
