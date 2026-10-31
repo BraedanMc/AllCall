@@ -28,3 +28,8 @@ jobs:
           ./tests/test_cds_bed.sh
           ./tests/test_cohort_snp_gate.sh
           ./tests/test_expand_user_path.sh
+          ./tests/test_species_config.sh
+          ./tests/test_kraken_ready.sh
+          ./tests/test_nf_revision_present.sh
+          ./tests/test_run_cohort_nextflow_cli.sh
+          ./tests/test_check_container.sh
