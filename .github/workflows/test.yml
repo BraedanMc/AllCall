@@ -19,7 +19,11 @@ jobs:
       - run: chmod +x bin/*.sh tests/*.sh
       - run: |
           ./tests/smoke.sh
+          SMOKE_SPECIES=mouse ./tests/smoke.sh
           ./tests/test_config_merge.sh
+          ./tests/test_species_config.sh
+          ./tests/test_nf_version_ok.sh
+          ./tests/test_run_cohort_launcher.sh
           ./tests/test_local_config.sh
           ./tests/test_setup_skip_kraken.sh
           ./tests/test_write_sheets_validation.sh
