@@ -34,7 +34,7 @@ mkdir -p "$scratch" "${tmp}/ref/virus/local" "${tmp}/data" "${tmp}/config"
 
 ref_tag="hg38"
 fasta_md5="1c9dcaddfa41027f17cd8f7a82c7293b"
-gtf_md5="15e6cab3a16e87f2564839f7500700e2"
+gtf_md5="6a585655a3e67150264b792b758372a2"
 if [[ "$SMOKE_SPECIES" == mouse ]]; then
   ref_tag="mm39"
   fasta_md5="41ace1b7157b98b393746aef5d1287a8"
