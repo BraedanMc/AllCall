@@ -70,6 +70,13 @@ cfg() {
   yq -r "$1" "$CONFIG_MERGED"
 }
 
+# Unique sample ids from a cohort CSV (first column; strips CR for CRLF sheets).
+cohort_sample_ids() {
+  local sheet="$1"
+  [[ -f "$sheet" ]] || die "cohort samplesheet not found: ${sheet}"
+  tail -n +2 "$sheet" | tr -d '\r' | cut -d, -f1 | sed 's/ //g' | awk '!seen[$0]++'
+}
+
 pipeline_name() {
   cfg ".pipelines.${1}.name"
 }
