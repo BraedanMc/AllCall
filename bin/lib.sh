@@ -124,6 +124,40 @@ work_dir() {
   fi
 }
 
+# nf-core: -profile docker vs singularity (apptainer) from site container_profile.
+nf_profile() {
+  if [[ "$(cfg '.container_profile')" == "docker" ]]; then echo docker; else echo singularity; fi
+}
+
+# Build one nextflow CLI invocation (quoted for eval). Cohort params are passed with -c (Groovy),
+# not -params-file — required for nf-core/viralintegration with pinned Nextflow 24.x; see docs.
+nf_cmd() {
+  local pipeline="$1" revision="$2" work="$3" params="$4"
+  local bin extra=() c
+  bin="$(abs_path "$(cfg '.nextflow.bin')")"
+  while IFS= read -r c; do
+    [[ -n "$c" && "$c" != "null" ]] && extra+=(-c "$(abs_path "$c")")
+  done < <(yq -r '.nextflow_configs[]?' "$CONFIG_MERGED")
+  printf '%q ' "$bin" run "$pipeline" -r "$revision" -resume -work-dir "$work" -c "$params" -profile "$(nf_profile)" "${extra[@]}"
+}
+
+# Groovy params for nf-core/viralintegration (must use viral_fasta; see pin/docs).
+cohort_write_viralintegration_params() {
+  local path="$1" sheet="$2" vi_outdir="$3" fasta="$4" gtf="$5" merged_virus="$6"
+  mkdir -p "$(dirname "$path")"
+  cat >"$path" <<EOF
+params {
+  input = "${sheet}"
+  outdir = "${vi_outdir}"
+  fasta = "${fasta}"
+  gtf = "${gtf}"
+  viral_fasta = "${merged_virus}"
+  max_cpus = 8
+  max_memory = "20.GB"
+}
+EOF
+}
+
 md5_file() {
   if command -v md5sum >/dev/null 2>&1; then
     md5sum "$1" | awk '{print $1}'

@@ -83,17 +83,11 @@ write_params() {
   mkdir -p "$(dirname "$path")"
   case "$key" in
     viralintegration)
-      cat >"$path" <<EOF
-params {
-  input = "${sheets[viralintegration]}"
-  outdir = "${run_root}/viralintegration"
-  fasta = "$(abs_path "$(cfg '.references.fasta')")"
-  gtf = "$(abs_path "$(cfg '.references.gtf')")"
-  viral_fasta = "$(abs_path "$(cfg '.virus.merged_fasta')")"
-  max_cpus = 8
-  max_memory = "20.GB"
-}
-EOF
+      cohort_write_viralintegration_params "$path" "${sheets[viralintegration]}" \
+        "${run_root}/viralintegration" \
+        "$(abs_path "$(cfg '.references.fasta')")" \
+        "$(abs_path "$(cfg '.references.gtf')")" \
+        "$(abs_path "$(cfg '.virus.merged_fasta')")"
       ;;
     sarek_sv)
       cat >"$path" <<EOF
@@ -134,20 +128,6 @@ params {
 EOF
       ;;
   esac
-}
-
-nf_profile() {
-  if [[ "$(cfg '.container_profile')" == "docker" ]]; then echo docker; else echo singularity; fi
-}
-
-nf_cmd() {
-  local pipeline="$1" revision="$2" work="$3" params="$4"
-  local bin extra=() c
-  bin="$(abs_path "$(cfg '.nextflow.bin')")"
-  while IFS= read -r c; do
-    [[ -n "$c" && "$c" != "null" ]] && extra+=(-c "$(abs_path "$c")")
-  done < <(yq -r '.nextflow_configs[]?' "$CONFIG_MERGED")
-  printf '%q ' "$bin" run "$pipeline" -r "$revision" -resume -work-dir "$work" -c "$params" -profile "$(nf_profile)" "${extra[@]}"
 }
 
 cmds=() cmd_names=()
