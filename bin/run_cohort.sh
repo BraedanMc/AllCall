@@ -256,23 +256,29 @@ while :; do
 
   for sample in "${samples[@]}"; do
     sv_bam="${out_sv}/preprocessing/markduplicates/${sample}/${sample}.md.cram"
-    if [[ -f "$sv_bam" && ! -f "${filt_dir}/${sample}.cds.bam" ]]; then
-      [[ "$cds_logged" == 1 ]] || { progress_event cds_filter launched; cds_logged=1; }
-      if samtools view -b -L "$bed_path" "$sv_bam" -o "${filt_dir}/${sample}.cds.bam"; then
+    cds_bam="${filt_dir}/${sample}.cds.bam"
+    if [[ -f "$sv_bam" ]]; then
+      if cohort_cds_bam_stale "$sv_bam" "$cds_bam"; then
+        [[ "$cds_logged" == 1 ]] || { progress_event cds_filter launched; cds_logged=1; }
+        if samtools view -b -L "$bed_path" "$sv_bam" -o "$cds_bam"; then
+          STATUS["${sample}|cds_filter"]=succeeded
+          progress_event cds_filter completed
+        else
+          STATUS["${sample}|cds_filter"]=failed
+          progress_event cds_filter failed
+        fi
+        matrix_write
+      elif [[ "${STATUS["${sample}|cds_filter"]:-not_started}" == not_started ]]; then
         STATUS["${sample}|cds_filter"]=succeeded
-        progress_event cds_filter completed
-      else
-        STATUS["${sample}|cds_filter"]=failed
-        progress_event cds_filter failed
+        matrix_write
       fi
-      matrix_write
     fi
     vi_bam="${out_vi}/star_align/${sample}/${sample}.Aligned.sortedByCoord.out.bam"
     if [[ -f "$vi_bam" && -z "${sex_map[$sample]:-}" ]]; then
       sex_map[$sample]="$(infer_sex "$vi_bam")"
       echo -e "${sample}\t${sex_map[$sample]}" >>"$sex_path"
     fi
-    [[ -f "${filt_dir}/${sample}.cds.bam" ]] && snp_ready[$sample]=1
+    [[ "${STATUS["${sample}|cds_filter"]:-}" == succeeded ]] && snp_ready[$sample]=1
   done
 
   if [[ "$(cfg '.pipelines.sarek.enabled')" == "true" && "$snp_started" == 0 && ${#snp_ready[@]} -gt 0 ]] && cds_filter_settled; then
