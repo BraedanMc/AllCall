@@ -24,6 +24,10 @@ grep -q 'max_cpus' "$cohort" && grep -q 'max_memory' "$cohort" || {
   echo "test_run_cohort_nf_cli: local VI resource caps missing" >&2
   exit 1
 }
+grep -qE "cfg '.pipelines.sarek.enabled'.*snp_started" "$cohort" || {
+  echo "test_run_cohort_nf_cli: SNP launch must gate on pipelines.sarek.enabled" >&2
+  exit 1
+}
 
 pin="${ROOT}/config/pin.yaml"
 grep -q 'version: "24.10.5"' "$pin" || {
