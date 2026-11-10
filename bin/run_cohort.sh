@@ -224,6 +224,7 @@ snp_started=0 snp_pid=""
 cds_logged=0
 idle_pass=0
 sarek_sv_finished=0
+vi_finished=0
 
 mark_done() {
   local pid="$1"
@@ -238,6 +239,7 @@ mark_done() {
     progress_event "$name" failed
   fi
   [[ "$name" == sarek_sv ]] && sarek_sv_finished=1
+  [[ "$name" == viralintegration ]] && vi_finished=1
   unset "pid_name[$pid]"
 }
 
@@ -275,7 +277,9 @@ while :; do
     [[ -f "${filt_dir}/${sample}.cds.bam" ]] && snp_ready[$sample]=1
   done
 
-  if [[ "$(cfg '.pipelines.sarek.enabled')" == "true" && "$snp_started" == 0 && ${#snp_ready[@]} -gt 0 ]] && cds_filter_settled; then
+  if [[ "$(cfg '.pipelines.sarek.enabled')" == "true" && "$snp_started" == 0 && ${#snp_ready[@]} -gt 0 ]] &&
+    cds_filter_settled &&
+    cohort_vi_finished_for_snp "$(cfg '.pipelines.viralintegration.enabled')" "$vi_finished"; then
     mapfile -t ready < <(printf '%s\n' "${!snp_ready[@]}" | sort)
     {
       echo "patient,sex,status,sample,bam"
