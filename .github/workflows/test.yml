@@ -33,4 +33,5 @@ jobs:
           ./tests/test_cohort_sample_ids.sh
           ./tests/test_expand_user_path.sh
           ./tests/test_nf_apptainer_overlay.sh
+          ./tests/test_small_host.sh
           ./tests/test_vi_host_bam_path.sh
