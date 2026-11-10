@@ -29,3 +29,4 @@ jobs:
           ./tests/test_cohort_snp_gate.sh
           ./tests/test_cohort_cds_cram_ref.sh
           ./tests/test_expand_user_path.sh
+          ./tests/test_vi_host_bam_path.sh
