@@ -570,6 +570,21 @@ cohort_cds_bam_stale() {
   return 1
 }
 
+# Comma-separated Sarek --tools for the WGS SV/CNV pass (same Nextflow run).
+sarek_sv_tools() {
+  local sv cnv combined
+  sv="$(cfg '.pipelines.sarek.tools_sv')"
+  [[ -n "$sv" && "$sv" != "null" ]] || die "pipelines.sarek.tools_sv is required when Sarek is enabled"
+  cnv="$(yq -r '.pipelines.sarek.tools_cnv // ""' "$CONFIG_MERGED")"
+  combined="$sv"
+  if [[ -n "$cnv" && "$cnv" != "null" ]]; then
+    if [[ ",${combined}," != *",${cnv},"* ]]; then
+      combined="${combined},${cnv}"
+    fi
+  fi
+  printf '%s' "$combined"
+}
+
 # True when Sarek SV cohort pass finished and every sample with an SV BAM has cds_filter status set.
 cohort_cds_filter_settled() {
   local sarek_sv_finished="$1" out_sv="$2"

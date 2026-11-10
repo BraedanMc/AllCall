@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Cohort driver: VI + Sarek SV + viralmetagenome in parallel; CDS filter + SNP when ready.
+# Cohort driver: VI + Sarek SV/CNV (+ optional viralmetagenome) in parallel; CDS filter + SNP when ready.
 set -euo pipefail
 # shellcheck source=lib.sh
 source "$(cd "$(dirname "$0")" && pwd)/lib.sh"
@@ -104,7 +104,7 @@ params {
   igenomes_ignore = true
   fasta = "$(abs_path "$(cfg '.references.fasta')")"
   gtf = "$(abs_path "$(cfg '.references.gtf')")"
-  tools = "$(cfg '.pipelines.sarek.tools_sv')"
+  tools = "$(sarek_sv_tools)"
 }
 EOF
       ;;

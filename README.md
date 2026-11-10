@@ -1,6 +1,6 @@
 # AllCall
 
-Bash-first orchestration for human or mouse WGS cohorts: a **site** YAML for per-run settings (including `species`), a versioned **pin** manifest for per-species references and pipeline revisions, one germline samplesheet, and thin wrappers around [nf-core](https://nf-co.re/) viralintegration, Sarek (SV + SNP), and viralmetagenome.
+Bash-first orchestration for human or mouse WGS cohorts: a **site** YAML for per-run settings (including `species`), a versioned **pin** manifest for per-species references and pipeline revisions, one germline samplesheet, and thin wrappers around [nf-core](https://nf-co.re/) viralintegration and Sarek (WGS SV/CNV + WES SNP). **viralmetagenome** stays in the pin for optional runs but is **off by default** (Kraken2 + disk; enable explicitly when needed).
 
 Workflow design: [`docs/plans/2026-10-20-wgs-pipeline-workflow.md`](docs/plans/2026-10-20-wgs-pipeline-workflow.md).
 
@@ -16,7 +16,8 @@ Workflow design: [`docs/plans/2026-10-20-wgs-pipeline-workflow.md`](docs/plans/2
 | Kraken2 host database | Paused |
 | Cohort FASTQs and `samplesheets/cohort.csv` | Not started |
 | Site Nextflow configs | Local overlay in `config/nextflow/` |
-| Launch viralintegration, Sarek SV, viralmetagenome | Not started |
+| Launch viralintegration, Sarek SV/CNV | Not started |
+| viralmetagenome (optional; off in default configs) | Deferred |
 | CDS filter, sex check, Sarek SNP | Not started |
 
 ## Workflow
@@ -25,21 +26,19 @@ Workflow design: [`docs/plans/2026-10-20-wgs-pipeline-workflow.md`](docs/plans/2
 flowchart TD
   setup[Setup check]
   vi[viralintegration]
-  sv[Sarek SV and Manta]
-  vm[viralmetagenome]
+  sv[Sarek SV Manta and CNVkit]
   filt[CDS filter plus 10 bp]
   sex[Sex from host BAM]
   snp[Sarek SNP as WES]
   setup --> vi
   setup --> sv
-  setup --> vm
   sv --> filt
   vi --> sex
   filt --> snp
   sex --> snp
 ```
 
-Viral integration, Sarek SV, and viralmetagenome start together. Sarek SNP starts after the CDS filter. Sex is inferred from chrX/chrY (or `X`/`Y`) read counts in the viralintegration host BAM when that BAM exists. One failure does not stop the other runs.
+Viral integration and the Sarek WGS pass (structural variants plus CNV) start together when enabled. The WGS pass is a single nf-core/sarek run: set `pipelines.sarek.tools_sv` (default `manta`) and `pipelines.sarek.tools_cnv` (default `cnvkit` in [`example.config.yaml`](example.config.yaml)); both are passed as Sarek `--tools`. Sarek SNP starts after the CDS filter. Sex is inferred from chrX/chrY (or `X`/`Y`) read counts in the viralintegration host BAM when that BAM exists. Optional viralmetagenome is gated on `pipelines.viralmetagenome.enabled: true`. One failure does not stop the other runs.
 
 ## Requirements
 
@@ -62,7 +61,7 @@ Install or refresh only the host tools:
 | File | Who edits | Contents |
 |------|-----------|----------|
 | [`config/pin.yaml`](config/pin.yaml) | Maintainers on reference/pipeline bumps | Per-species UCSC FASTA/GTF URLs and MD5s (`species.human`, `species.mouse`), virus asset URLs/paths, Kraken2 DB path per species, nf-core **name + revision** per pipeline, Nextflow version/bin/home |
-| [`site.config.yaml`](site.config.yaml) (copy from [`example.config.yaml`](example.config.yaml)) | You per site/run | `species` (`human` or `mouse`), `scratch_root`, `work_dirs`, `samplesheet`, `results_dir`, pipeline **enabled** flags and Sarek tool choices, `container_profile`, optional `nextflow_configs` overlays |
+| [`site.config.yaml`](site.config.yaml) (copy from [`example.config.yaml`](example.config.yaml)) | You per site/run | `species` (`human` or `mouse`), `scratch_root`, `work_dirs`, `samplesheet`, `results_dir`, pipeline **enabled** flags, Sarek `tools_sv` / `tools_cnv` / `tools_snp`, `container_profile`, optional `nextflow_configs` overlays |
 
 `bin/lib.sh` loads **`config/pin.yaml` first**, then your site file (`ALLCALL_PIN` overrides the pin path). Keys should not overlap; site values win if they do. After merge, `species` selects `references` and `kraken2_db` from `species.<name>` in the pin (default `human` if omitted).
 
@@ -79,7 +78,7 @@ chmod +x bin/*.sh
 ./bin/run_cohort.sh --config site.config.yaml --run-name cohort01
 ```
 
-Dry-run (prints four `nextflow run … -resume` commands and writes `running` in the matrix):
+Dry-run (prints `nextflow run … -resume` commands for each enabled pipeline and writes `running` in the matrix):
 
 ```bash
 ./bin/run_cohort.sh --config site.config.yaml --dry-run
@@ -127,7 +126,7 @@ Edit [`samplesheets/cohort.local.example`](samplesheets/cohort.local.example) (o
 | `bin/setup.sh` | References, virus merge, Nextflow install/pull, Kraken2 DB |
 | `bin/check.sh` | Same gates as setup, no downloads |
 | `bin/write_sheets.sh` | Simple sheet → pipeline CSVs |
-| `bin/run_cohort.sh` | Cohort driver (VI, SV, VM parallel; CDS + SNP when ready) |
+| `bin/run_cohort.sh` | Cohort driver (VI + Sarek SV/CNV parallel; CDS + SNP when ready; optional VM) |
 | `bin/merge_virus_fasta.sh` | CTAT + local virus FASTA merge |
 | `bin/cds_bed.sh` | CDS intervals from GTF (+ flank) |
 

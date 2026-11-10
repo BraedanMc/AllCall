@@ -87,9 +87,10 @@ pipelines:
   sarek:
     enabled: true
     tools_sv: manta
+    tools_cnv: cnvkit
     tools_snp: haplotypecaller
   viralmetagenome:
-    enabled: true
+    enabled: false
 container_profile: docker
 sex_xy_min_ratio: 0.1
 nextflow_configs: []

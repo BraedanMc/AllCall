@@ -35,3 +35,5 @@ jobs:
           ./tests/test_nf_apptainer_overlay.sh
           ./tests/test_small_host.sh
           ./tests/test_vi_host_bam_path.sh
+          ./tests/test_sarek_sv_tools.sh
+          ./tests/test_cohort_sarek_sv_params.sh
