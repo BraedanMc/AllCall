@@ -88,7 +88,8 @@ df -h ~/Documents/projects/allcall/scratch
 If the gate passes:
 
 1. Copy `config/local.config.yaml` to `site.config.yaml` (or merge pipeline flags).
-2. Set `pipelines.sarek.enabled` and/or `pipelines.viralmetagenome.enabled` to `true`.
+2. Set `pipelines.sarek.enabled` to `true` (SV/CNV: `tools_sv: manta`, `tools_cnv: cnvkit` in site config).
+3. **viralmetagenome** remains deferred unless you explicitly set `pipelines.viralmetagenome.enabled: true` and have a built Kraken2 DB.
 3. Re-run `./bin/check.sh` and `./bin/run_cohort.sh` with a new `--run-name`.
 
 If the gate fails, stop after phase 1 and archive VI results only.

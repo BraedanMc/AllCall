@@ -16,6 +16,7 @@ pipelines:
   sarek:
     enabled: false
     tools_sv: manta
+    tools_cnv: cnvkit
     tools_snp: haplotypecaller
   viralmetagenome:
     enabled: false
