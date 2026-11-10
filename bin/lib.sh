@@ -537,6 +537,15 @@ cohort_vi_finished_for_snp() {
   [[ "$vi_finished" == 1 ]]
 }
 
+# True when source CRAM is missing or the CDS BAM is absent or older than the CRAM.
+cohort_cds_bam_stale() {
+  local sv_bam="$1" cds_bam="$2"
+  [[ -f "$sv_bam" ]] || return 1
+  [[ ! -f "$cds_bam" ]] && return 0
+  [[ "$sv_bam" -nt "$cds_bam" ]] && return 0
+  return 1
+}
+
 # True when Sarek SV cohort pass finished and every sample with an SV BAM has cds_filter status set.
 cohort_cds_filter_settled() {
   local sarek_sv_finished="$1" out_sv="$2"

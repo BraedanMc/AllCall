@@ -260,17 +260,24 @@ while :; do
 
   for sample in "${samples[@]}"; do
     sv_bam="${out_sv}/preprocessing/markduplicates/${sample}/${sample}.md.cram"
-    if [[ -f "$sv_bam" && ! -f "${filt_dir}/${sample}.cds.bam" &&
-      "${STATUS["${sample}|cds_filter"]:-not_started}" != failed ]]; then
-      [[ "$cds_logged" == 1 ]] || { progress_event cds_filter launched; cds_logged=1; }
-      if samtools view -b -T "$ref_fasta" -L "$bed_path" "$sv_bam" -o "${filt_dir}/${sample}.cds.bam"; then
+    cds_bam="${filt_dir}/${sample}.cds.bam"
+    if [[ -f "$sv_bam" ]]; then
+      if cohort_cds_bam_stale "$sv_bam" "$cds_bam"; then
+        if [[ "${STATUS["${sample}|cds_filter"]:-not_started}" != failed ]]; then
+          [[ "$cds_logged" == 1 ]] || { progress_event cds_filter launched; cds_logged=1; }
+          if samtools view -b -T "$ref_fasta" -L "$bed_path" "$sv_bam" -o "$cds_bam"; then
+            STATUS["${sample}|cds_filter"]=succeeded
+            progress_event cds_filter completed
+          else
+            STATUS["${sample}|cds_filter"]=failed
+            progress_event cds_filter failed
+          fi
+          matrix_write
+        fi
+      elif [[ "${STATUS["${sample}|cds_filter"]:-not_started}" == not_started ]]; then
         STATUS["${sample}|cds_filter"]=succeeded
-        progress_event cds_filter completed
-      else
-        STATUS["${sample}|cds_filter"]=failed
-        progress_event cds_filter failed
+        matrix_write
       fi
-      matrix_write
     fi
     # nf-core/viralintegration 0.1.1: STAR_ALIGN_HOST uses ext.prefix "${meta.id}.host" and publishDir .../star/
     vi_bam="${out_vi}/star/${sample}.host.Aligned.sortedByCoord.out.bam"
@@ -278,7 +285,7 @@ while :; do
       sex_map[$sample]="$(infer_sex "$vi_bam")"
       echo -e "${sample}\t${sex_map[$sample]}" >>"$sex_path"
     fi
-    [[ -f "${filt_dir}/${sample}.cds.bam" ]] && snp_ready[$sample]=1
+    [[ "${STATUS["${sample}|cds_filter"]:-}" == succeeded ]] && snp_ready[$sample]=1
   done
 
   if [[ "$(cfg '.pipelines.sarek.enabled')" == "true" && "$snp_started" == 0 && ${#snp_ready[@]} -gt 0 ]] &&
