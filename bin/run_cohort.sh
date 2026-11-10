@@ -45,7 +45,7 @@ for p in "${sheet_paths[@]}"; do
   esac
 done
 
-mapfile -t samples < <(tail -n +2 "$(abs_path "$(cfg '.samplesheet')")" | cut -d, -f1 | sed 's/ //g' | awk '!seen[$0]++')
+mapfile -t samples < <(cohort_sample_ids "$(abs_path "$(cfg '.samplesheet')")")
 
 ANALYSES=(viralintegration sarek_sv cds_filter sarek_snp viralmetagenome)
 matrix="${run_root}/matrix.tsv"
@@ -144,9 +144,9 @@ nf_cmd() {
   local pipeline="$1" revision="$2" work="$3" params="$4"
   local bin extra=() c
   bin="$(abs_path "$(cfg '.nextflow.bin')")"
-  while IFS= read -r c; do
-    [[ -n "$c" && "$c" != "null" ]] && extra+=(-c "$(abs_path "$c")")
-  done < <(yq -r '.nextflow_configs[]?' "$CONFIG_MERGED")
+  while IFS= read -r -d '' c; do
+    extra+=("$c")
+  done < <(nf_nextflow_config_args)
   printf '%q ' "$bin" run "$pipeline" -r "$revision" -resume -work-dir "$work" -c "$params" -profile "$(nf_profile)" "${extra[@]}"
 }
 
@@ -175,6 +175,10 @@ snp_cmd="$(nf_cmd "$(pipeline_name sarek)" "$(pipeline_revision sarek)" "$(work_
 
 for c in "${cmds[@]}"; do echo "$c"; done
 echo "$snp_cmd"
+
+if [[ "$(cfg '.pipelines.viralintegration.enabled')" == "true" ]]; then
+  small_host_check
+fi
 
 if [[ "$DRY_RUN" == 1 ]]; then
   for s in "${samples[@]}"; do
@@ -260,16 +264,24 @@ while :; do
 
   for sample in "${samples[@]}"; do
     sv_bam="${out_sv}/preprocessing/markduplicates/${sample}/${sample}.md.cram"
-    if [[ -f "$sv_bam" && ! -f "${filt_dir}/${sample}.cds.bam" ]]; then
-      [[ "$cds_logged" == 1 ]] || { progress_event cds_filter launched; cds_logged=1; }
-      if samtools view -b -T "$ref_fasta" -L "$bed_path" "$sv_bam" -o "${filt_dir}/${sample}.cds.bam"; then
+    cds_bam="${filt_dir}/${sample}.cds.bam"
+    if [[ -f "$sv_bam" ]]; then
+      if cohort_cds_bam_stale "$sv_bam" "$cds_bam"; then
+        if [[ "${STATUS["${sample}|cds_filter"]:-not_started}" != failed ]]; then
+          [[ "$cds_logged" == 1 ]] || { progress_event cds_filter launched; cds_logged=1; }
+          if samtools view -b -T "$ref_fasta" -L "$bed_path" "$sv_bam" -o "$cds_bam"; then
+            STATUS["${sample}|cds_filter"]=succeeded
+            progress_event cds_filter completed
+          else
+            STATUS["${sample}|cds_filter"]=failed
+            progress_event cds_filter failed
+          fi
+          matrix_write
+        fi
+      elif [[ "${STATUS["${sample}|cds_filter"]:-not_started}" == not_started ]]; then
         STATUS["${sample}|cds_filter"]=succeeded
-        progress_event cds_filter completed
-      else
-        STATUS["${sample}|cds_filter"]=failed
-        progress_event cds_filter failed
+        matrix_write
       fi
-      matrix_write
     fi
     # nf-core/viralintegration 0.1.1: STAR_ALIGN_HOST uses ext.prefix "${meta.id}.host" and publishDir .../star/
     vi_bam="${out_vi}/star/${sample}.host.Aligned.sortedByCoord.out.bam"
@@ -277,7 +289,7 @@ while :; do
       sex_map[$sample]="$(infer_sex "$vi_bam")"
       echo -e "${sample}\t${sex_map[$sample]}" >>"$sex_path"
     fi
-    [[ -f "${filt_dir}/${sample}.cds.bam" ]] && snp_ready[$sample]=1
+    [[ "${STATUS["${sample}|cds_filter"]:-}" == succeeded ]] && snp_ready[$sample]=1
   done
 
   if [[ "$(cfg '.pipelines.sarek.enabled')" == "true" && "$snp_started" == 0 && ${#snp_ready[@]} -gt 0 ]] &&
@@ -320,3 +332,19 @@ while :; do
   fi
   sleep 2
 done
+
+exit_code=0
+for s in "${samples[@]}"; do
+  for a in "${ANALYSES[@]}"; do
+    [[ "${STATUS["${s}|${a}"]:-not_started}" == failed ]] && exit_code=1
+  done
+done
+if [[ "$(cfg '.pipelines.sarek.enabled')" == "true" ]]; then
+  for s in "${samples[@]}"; do
+    if [[ -f "${filt_dir}/${s}.cds.bam" && "${STATUS["${s}|sarek_snp"]:-not_started}" == not_started ]]; then
+      echo "run_cohort: sample ${s} has CDS BAM but was not included in the Sarek SNP pass" >&2
+      exit_code=1
+    fi
+  done
+fi
+exit "$exit_code"

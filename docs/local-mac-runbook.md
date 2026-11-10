@@ -7,6 +7,7 @@ Human (hg38) viral integration on a Mac with Docker Desktop. Phase 1 runs **nf-c
 - Docker Desktop running.
 - Clone with `main` including `config/local.vi-only.config.yaml` and `data/README.md`.
 - Scratch tree: `mkdir -p ~/Documents/projects/allcall/scratch data ref/virus/local`
+- **VI STAR indices on HPC** (recommended): `config/local.vi-only.config.yaml` sets `small_host: true` so AllCall refuses to run viralintegration until prebuilt indices exist under `ref/vi_star/` (see [HPC offload](#hpc-star-indices-small_host) below). Raising Docker memory alone is often insufficient for hg38 `STAR_GENOMEGENERATE` inside nf-core/viralintegration.
 
 ## 1. Poll `data/` for FASTQs
 
@@ -39,6 +40,34 @@ cp samplesheets/cohort.human.single.example.csv samplesheets/cohort.csv
 ```
 
 Full reference download and Nextflow pulls require network and disk; Kraken2 build is skipped.
+
+With `small_host: true`, `check.sh` fails with HPC instructions until `ref/vi_star/host_star/star/Genome` and `ref/vi_star/plus_star/star/Genome` are present (from [HPC offload](#hpc-star-indices-small_host)).
+
+## HPC STAR indices (`small_host`)
+
+Mac phase 1 uses `small_host: true` in `config/local.vi-only.config.yaml`. That tells AllCall this host cannot build hg38 STAR indices inside the VI pipeline (typical failure: Docker RAM ~8–24 GiB, STAR needs much more).
+
+**On SLURM (or any large-memory Linux node):**
+
+```bash
+cd /path/to/AllCall
+#SBATCH --cpus-per-task=16
+#SBATCH --mem=64G
+#SBATCH --time=8:00:00
+./bin/hpc_build_vi_star_indices.sh --species human
+```
+
+The script is self-contained (downloads hg38 FASTA/GTF, virus bundle, builds host + host+virus STAR indices under `ref/vi_star/`). Optional: drop extra virus FASTAs in `ref/virus/local/` before running.
+
+**Back on the Mac**, rsync the tree into the clone:
+
+```bash
+rsync -avP user@hpc:/path/to/AllCall/ref/vi_star/ ./ref/vi_star/
+```
+
+Re-run `./bin/check.sh config/local.vi-only.config.yaml` — you should see `prebuilt VI STAR indices ok`.
+
+To run VI on a machine with enough RAM/Docker instead, set `small_host: false` in your site config (see `config/local.config.yaml` for a full local stack example).
 
 ## 4. Phase 1 — viralintegration (real run)
 

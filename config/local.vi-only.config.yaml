@@ -1,5 +1,7 @@
 # Mac phase 1: viralintegration only (Sarek / viralmetagenome off until disk check passes).
 species: human
+# Block in-pipeline STAR genomeGenerate until ref/vi_star is built on HPC and rsynced here.
+small_host: true
 scratch_root: ~/Documents/projects/allcall/scratch
 work_dirs:
   viralintegration: nfVI

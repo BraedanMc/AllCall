@@ -70,6 +70,13 @@ cfg() {
   yq -r "$1" "$CONFIG_MERGED"
 }
 
+# Unique sample ids from a cohort CSV (first column; strips CR for CRLF sheets).
+cohort_sample_ids() {
+  local sheet="$1"
+  [[ -f "$sheet" ]] || die "cohort samplesheet not found: ${sheet}"
+  tail -n +2 "$sheet" | tr -d '\r' | cut -d, -f1 | sed 's/ //g' | awk '!seen[$0]++'
+}
+
 pipeline_name() {
   cfg ".pipelines.${1}.name"
 }
@@ -388,6 +395,23 @@ nextflow_env() {
   export NXF_DISABLE_CHECK_LATEST=true
 }
 
+# Nextflow -c overlays from site config; auto-append Apptainer overlay when needed.
+nf_nextflow_config_args() {
+  local extra=() c rel apptainer_overlay seen_apptainer=0
+  apptainer_overlay="config/nextflow/local.apptainer.config"
+  while IFS= read -r c; do
+    [[ -n "$c" && "$c" != "null" ]] || continue
+    rel="${c#"${ALLCALL_ROOT}/"}"
+    [[ "$rel" == "$apptainer_overlay" ]] && seen_apptainer=1
+    extra+=(-c "$(abs_path "$c")")
+  done < <(yq -r '.nextflow_configs[]?' "$CONFIG_MERGED")
+  # local.config disables Singularity for Docker; re-enable when site uses Apptainer (after local.config).
+  if [[ "$(cfg '.container_profile')" == "apptainer" && "$seen_apptainer" == 0 ]]; then
+    extra+=(-c "$(abs_path "$apptainer_overlay")")
+  fi
+  printf '%s\0' "${extra[@]}"
+}
+
 nf_version_ok() {
   local bin ver out
   bin="$(abs_path "$(cfg '.nextflow.bin')")"
@@ -537,6 +561,15 @@ cohort_vi_finished_for_snp() {
   [[ "$vi_finished" == 1 ]]
 }
 
+# True when source CRAM is missing or the CDS BAM is absent or older than the CRAM.
+cohort_cds_bam_stale() {
+  local sv_bam="$1" cds_bam="$2"
+  [[ -f "$sv_bam" ]] || return 1
+  [[ ! -f "$cds_bam" ]] && return 0
+  [[ "$sv_bam" -nt "$cds_bam" ]] && return 0
+  return 1
+}
+
 # True when Sarek SV cohort pass finished and every sample with an SV BAM has cds_filter status set.
 cohort_cds_filter_settled() {
   local sarek_sv_finished="$1" out_sv="$2"
@@ -551,4 +584,63 @@ cohort_cds_filter_settled() {
     [[ "$st" != not_started ]] || return 1
   done
   return 0
+}
+
+small_host_enabled() {
+  [[ "$(cfg '.small_host // false')" == "true" ]]
+}
+
+vi_star_index_root() {
+  abs_path "ref/vi_star"
+}
+
+vi_star_indices_ready() {
+  local root="$1"
+  [[ -f "${root}/host_star/star/Genome" && -f "${root}/plus_star/star/Genome" ]]
+}
+
+small_host_hpc_notice() {
+  local species root
+  species="$(cfg '.species // "human"')"
+  root="$(vi_star_index_root)"
+  cat >&2 <<EOF
+check: small_host is enabled with viralintegration — this machine must not build hg38/mm39 STAR indices inside nf-core/viralintegration.
+
+Typical Mac laptops (~24 GB RAM) and Docker Desktop with low memory limits (often <32 GiB) cannot run STAR_GENOMEGENERATE for human/mouse host genomes inside the VI workflow (often ~48+ GiB). You will see OOM (exit 137) if you try.
+
+Build indices on a large-memory HPC node, then copy ref/vi_star (and ref/ if needed) back to this clone.
+
+SLURM example:
+  #SBATCH --cpus-per-task=16
+  #SBATCH --mem=64G
+  #SBATCH --time=8:00:00
+  cd /path/to/AllCall
+  ./bin/hpc_build_vi_star_indices.sh --species ${species}
+
+Sync to Mac (adjust host and paths):
+  rsync -avP user@hpc:/path/to/AllCall/ref/vi_star/ ${root}/
+
+Required after sync:
+  ${root}/host_star/star/Genome
+  ${root}/plus_star/star/Genome
+
+Then re-run: ./bin/check.sh <site.config.yaml>
+EOF
+}
+
+small_host_check() {
+  if [[ "$(cfg '.pipelines.viralintegration.enabled')" != "true" ]]; then
+    return 0
+  fi
+  if ! small_host_enabled; then
+    return 0
+  fi
+  local root
+  root="$(vi_star_index_root)"
+  if vi_star_indices_ready "$root"; then
+    echo "check: small_host enabled; prebuilt VI STAR indices ok (${root})"
+    return 0
+  fi
+  small_host_hpc_notice
+  die "check: missing prebuilt VI STAR indices under ${root}"
 }
