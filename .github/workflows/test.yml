@@ -30,5 +30,6 @@ jobs:
           ./tests/test_cohort_cds_cram_ref.sh
           ./tests/test_cohort_cds_no_retry.sh
           ./tests/test_cds_filter_resume.sh
+          ./tests/test_cohort_sample_ids.sh
           ./tests/test_expand_user_path.sh
           ./tests/test_vi_host_bam_path.sh

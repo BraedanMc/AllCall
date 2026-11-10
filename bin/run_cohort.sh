@@ -45,7 +45,7 @@ for p in "${sheet_paths[@]}"; do
   esac
 done
 
-mapfile -t samples < <(tail -n +2 "$(abs_path "$(cfg '.samplesheet')")" | cut -d, -f1 | sed 's/ //g' | awk '!seen[$0]++')
+mapfile -t samples < <(cohort_sample_ids "$(abs_path "$(cfg '.samplesheet')")")
 
 ANALYSES=(viralintegration sarek_sv cds_filter sarek_snp viralmetagenome)
 matrix="${run_root}/matrix.tsv"
