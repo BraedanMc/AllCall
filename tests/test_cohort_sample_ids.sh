@@ -27,4 +27,12 @@ for id in "${ids[@]}"; do
   }
 done
 
+printf 'sample,fastq_1,fastq_2\nS1,%s/a.fastq.gz,%s/b.fastq.gz\nS1,%s/c.fastq.gz,%s/d.fastq.gz\n' \
+  "$tmp" "$tmp" "$tmp" "$tmp" >"${tmp}/dup.csv"
+mapfile -t dup_ids < <(cohort_sample_ids "${tmp}/dup.csv")
+[[ "${#dup_ids[@]}" -eq 1 && "${dup_ids[0]}" == S1 ]] || {
+  echo "test_cohort_sample_ids: duplicate rows should yield one id (got ${#dup_ids[@]}: ${dup_ids[*]})" >&2
+  exit 1
+}
+
 echo "test_cohort_sample_ids: ok"
