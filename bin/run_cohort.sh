@@ -227,6 +227,7 @@ for i in "${!cmds[@]}"; do
 done
 
 snp_started=0 snp_pid=""
+declare -a snp_launched_samples=()
 cds_logged=0
 idle_pass=0
 sarek_sv_finished=0
@@ -296,6 +297,7 @@ while :; do
     cds_filter_settled &&
     cohort_vi_finished_for_snp "$(cfg '.pipelines.viralintegration.enabled')" "$vi_finished"; then
     mapfile -t ready < <(printf '%s\n' "${!snp_ready[@]}" | sort)
+    snp_launched_samples=("${ready[@]}")
     {
       echo "patient,sex,status,sample,bam"
       for s in "${ready[@]}"; do
@@ -313,7 +315,7 @@ while :; do
     rc=0
     wait "$snp_pid" || rc=$?
     st=failed; [[ "$rc" == 0 ]] && st=succeeded
-    for s in "${!snp_ready[@]}"; do STATUS["${s}|sarek_snp"]=$st; done
+    for s in "${snp_launched_samples[@]}"; do STATUS["${s}|sarek_snp"]=$st; done
     matrix_write
     if [[ "$st" == succeeded ]]; then
       progress_event sarek_snp completed

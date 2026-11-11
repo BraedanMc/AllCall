@@ -27,6 +27,7 @@ jobs:
           ./tests/test_references_check.sh
           ./tests/test_cds_bed.sh
           ./tests/test_cohort_snp_gate.sh
+          ./tests/test_cohort_snp_launch_scope.sh
           ./tests/test_cohort_cds_cram_ref.sh
           ./tests/test_cohort_cds_no_retry.sh
           ./tests/test_cds_filter_resume.sh
