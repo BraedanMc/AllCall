@@ -27,4 +27,12 @@ for id in "${ids[@]}"; do
   }
 done
 
+printf 'sample,fastq_1,fastq_2\nS1,%s/a.fastq.gz,%s/b.fastq.gz\nS1,%s/c.fastq.gz,%s/d.fastq.gz\nS2,%s/e.fastq.gz,%s/f.fastq.gz\n' \
+  "$tmp" "$tmp" "$tmp" "$tmp" "$tmp" "$tmp" >"${tmp}/dup.csv"
+mapfile -t deduped < <(cohort_sample_ids "${tmp}/dup.csv")
+[[ "${#deduped[@]}" -eq 2 && "${deduped[0]}" == S1 && "${deduped[1]}" == S2 ]] || {
+  echo "test_cohort_sample_ids: duplicate rows should dedupe to S1 S2 (got ${deduped[*]})" >&2
+  exit 1
+}
+
 echo "test_cohort_sample_ids: ok"
