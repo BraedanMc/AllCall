@@ -35,3 +35,6 @@ jobs:
           ./tests/test_nf_apptainer_overlay.sh
           ./tests/test_small_host.sh
           ./tests/test_vi_host_bam_path.sh
+          ./tests/test_vi_star_indices_ready.sh
+          ./tests/test_run_cohort_dry_run.sh
+          ./tests/test_nextflow_apptainer_overlay.sh
