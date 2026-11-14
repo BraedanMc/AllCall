@@ -229,6 +229,7 @@ done
 snp_started=0 snp_pid=""
 cds_logged=0
 idle_pass=0
+cds_pending_waits=0
 sarek_sv_finished=0
 vi_finished=0
 
@@ -325,8 +326,31 @@ while :; do
 
   [[ ${#pid_name[@]} -eq 0 && "$snp_started" == 1 && -z "$snp_pid" ]] && break
   if [[ ${#pid_name[@]} -eq 0 && "$snp_started" == 0 ]]; then
-    idle_pass=$((idle_pass + 1))
-    [[ "$idle_pass" -ge 2 ]] && break
+    allow_idle=1
+    if [[ "$(cfg '.pipelines.sarek.enabled')" == "true" && "$sarek_sv_finished" == 1 ]]; then
+      for sample in "${samples[@]}"; do
+        [[ "${STATUS["${sample}|cds_filter"]:-not_started}" == not_started ]] && allow_idle=0
+      done
+    fi
+    if [[ "$allow_idle" == 1 ]]; then
+      idle_pass=$((idle_pass + 1))
+      cds_pending_waits=0
+      [[ "$idle_pass" -ge 2 ]] && break
+    else
+      idle_pass=0
+      cds_pending_waits=$((cds_pending_waits + 1))
+      if [[ "$cds_pending_waits" -ge 90 ]]; then
+        for sample in "${samples[@]}"; do
+          sv_bam="${out_sv}/preprocessing/markduplicates/${sample}/${sample}.md.cram"
+          if [[ ! -f "$sv_bam" && "${STATUS["${sample}|cds_filter"]:-not_started}" == not_started ]]; then
+            STATUS["${sample}|cds_filter"]=failed
+            progress_event cds_filter failed
+          fi
+        done
+        matrix_write
+        cds_pending_waits=0
+      fi
+    fi
   else
     idle_pass=0
   fi
@@ -340,6 +364,15 @@ for s in "${samples[@]}"; do
   done
 done
 if [[ "$(cfg '.pipelines.sarek.enabled')" == "true" ]]; then
+  sv_cohort_st="${STATUS["${samples[0]}|sarek_sv"]:-not_started}"
+  if [[ "$sv_cohort_st" == succeeded ]]; then
+    for s in "${samples[@]}"; do
+      if [[ "${STATUS["${s}|cds_filter"]:-not_started}" == not_started ]]; then
+        echo "run_cohort: sample ${s} has no CDS filter result after Sarek SV succeeded" >&2
+        exit_code=1
+      fi
+    done
+  fi
   for s in "${samples[@]}"; do
     if [[ -f "${filt_dir}/${s}.cds.bam" && "${STATUS["${s}|sarek_snp"]:-not_started}" == not_started ]]; then
       echo "run_cohort: sample ${s} has CDS BAM but was not included in the Sarek SNP pass" >&2
